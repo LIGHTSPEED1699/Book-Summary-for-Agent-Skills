@@ -20,14 +20,16 @@ Every book folder follows the same layout:
                       #   Key Takeaways · Connects To
 ```
 
-## Books in this repo
+## Contents in this repo
 
-| Folder | Book | Chapters |
+| Folder | Source document | Coverage |
 |---|---|---|
 | `skogestad-multivariable-control` | Skogestad & Postlethwaite, *Multivariable Feedback Control: Analysis and Design* (1st ed., 1996) | 12 + appendix |
 | `astrom-adaptive-control` | Åström & Wittenmark, *Adaptive Control* (1st ed., 1989) | 13 |
 | `stengel-optimal-control-estimation` | Stengel, *Optimal Control and Estimation* (McGraw-Hill, 1994) | 6 + epilogue |
 | `shinskey-process-control` | Shinskey, *Process Control Systems: Application, Design, and Adjustment* | chapter-by-chapter |
+| `csa-c22-1` | CSA C22.1:24, *Canadian Electrical Code, Part I* (2024, 26th ed.) | section-by-section |
+| `csa-b149-3` | CSA B149.3:25, *Code for the field approval of fuel-related components on appliances* | section-by-section |
 
 ## How to use with an agent
 
@@ -38,4 +40,4 @@ They're also useful for humans: each chapter file is a dense study summary with 
 ## Notes & caveats
 
 - These are **study summaries / derivative notes** generated for personal learning and agent augmentation, not replacements for the original books. Equations in scans that OCR'd noisily were reconstructed from prose context against standard published results — verify before relying on a specific formula.
-- All book content © its respective authors and publishers. This repo hosts only the derived summaries; takedown requests will be honored promptly.
+- All book content © its respective authors and publishers; CSA standards © CSA Group. This repo hosts only the derived summaries; takedown requests will be honored promptly.
