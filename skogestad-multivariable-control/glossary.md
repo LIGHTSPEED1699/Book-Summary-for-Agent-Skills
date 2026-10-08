@@ -1,4 +1,4 @@
-# Glossary — Multivariable Feedback Control (Skogestad & Postlethwaite)
+# Glossary — Multivariable Feedback Control (Skogestad & Postlethwaite, 2nd ed. 2005)
 
 ## Scaling & signals
 - **Scaled variable**: x_scaled = x_physical / x_expected; all gains, weights, and rules below assume scaled variables.
@@ -54,6 +54,18 @@
 - **2-DOF**: separate feedback K_y and prefilter; resolves tracking vs rejection conflict.
 - **Cascade / input resetting (valve position control)**: extra measurements / extra inputs via SISO subcontrollers.
 - **Partial control**: leave self-regulating outputs open-loop when full control is infeasible.
+
+## 2nd-edition additions
+- **SIMC (Simple Model Control)**: Skogestad's IMC-derived tuning — one knob τ_c (closed-loop time constant, τ_c ≥ θ); PI/PID/integrating formulas in cheatsheet.
+- **Half rule**: when collapsing higher-order dynamics, split each neglected time constant: half to effective delay θ, half to dominant τ₁. θ_eff = θ + Στ_neg/2.
+- **Effective delay θ**: the single number that limits achievable bandwidth; compute via half rule, then ω_c ≲ 1/θ.
+- **Self-optimizing control**: acceptable loss with constant controlled-variable setpoints under disturbances (Skogestad 2000); kills the on-line optimization layer for that variable.
+- **Loss L**: L(u,d) = J(u,d) − J_opt(d) ≥ 0 — currency of variable-selection decisions.
+- **LMI (linear matrix inequality)**: affine Hermitian F(x) ≺ 0; convex feasibility; backend for stability/H∞/μ-bound/multi-objective synthesis (ch12).
+- **BMI**: bilinear matrix inequality — appears when controller × Lyapunov variables; nonconvex, needs variable change or iteration.
+- **Youla/Q parametrization**: all stabilizing controllers from one K₀ + free stable Q; keeps synthesis convex.
+- **Pole polynomial**: (see Plant structure) — 2e ch4 consolidates its computation via minors.
+- **Lower gain margin**: GM measured at the −180° crossing from below; binding for integrating/NMP loops (2e ch2).
 
 ## Benchmarks & examples in the book
 - **Satellite example**: flexible satellite, γ(G) ≈ 500 — per-channel margins fine, simultaneous errors fatal (μ).

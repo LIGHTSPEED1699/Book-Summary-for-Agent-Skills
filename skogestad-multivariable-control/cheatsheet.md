@@ -68,12 +68,34 @@
 ## Margins vs peaks (ch2)
 - GM ≥ M_s/(M_s − 1); PM ≥ 2 arcsin(1/(2M_t))... use M_s ≈ 2, M_t ≈ 1.4 as design targets.
 - Bandwidth-delay: ω_B θ ≲ 0.5-1 for sane response; ω_B < 1/θ hard.
+- Lower gain margin matters for integrating/NMP plants: |1+L| ≥ 1 − 1/GM... check the −180° crossing from BELOW too (2e addition).
+
+## SIMC tuning (ch2, 2e) — one knob: closed-loop time constant τ_c ≥ θ
+| Model (scaled: k, τ_i, θ) | Controller | Settings |
+|---|---|---|
+| k/(τ₁s+1)·e^{−θs} | PI | K_c = 1/(k(τ_c+θ)), τ_I = min(τ₁, 4(τ_c+θ)) |
+| k/((τ₁s+1)(τ₂s+1))·e^{−θs} | PID | τ_c = max(θ, τ₂/3); K_c = (τ₁+τ₂)/(kτ_c), τ_I = τ₁, τ_D = τ₂/(1+τ₁/τ_c) (derivative on measurement) |
+| k·e^{−θs}/s (integrating) | PI | K_c = 1/(k(τ_c+θ)), τ_I = 4(τ_c+θ) |
+- Default τ_c = θ (tight, robust); larger τ_c = sluggish/smoother; smaller risks RS.
+- **Half rule** for effective delay when collapsing lags: θ_eff = θ + Σ(neglected τ)/2; τ₁_eff = τ₁ + Σ(neglected τ)/2. First-order model ⇒ PI; second-order ⇒ PID. PI performance floor = τ₂/2.
+- ZN settings are an SIMC point with no robustness budget: ZN gain failed RS at 33% error in ch2's own example.
+
+## Self-optimizing control (ch10.3, 2e)
+- Definition: acceptable loss L = J(u,d) − J_opt(d) with **constant setpoints** despite disturbances — no on-line optimization.
+- Local rule (quadratic J): loss for holding c constant ≈ ½‖J_yy^{1/2}(∂c/∂d)⁻¹d̃‖²; choose c minimizing σ_max(J_yy^{1/2}(∂c/∂d)⁻¹), subject to the gradient condition (∂J/∂u = 0 at constant c for all d) and c feasible over the whole disturbance range.
+- Rule of thumb: the variable whose optimum is flat vs disturbances (e.g., flowrates in distillation, intermediate compositions) self-optimizes; pick the one with smallest sensitivity band.
 
 ## Synthesis quick (ch9)
-- LQG: K_r = BᵀX, K_f = YCᵀ (two AREs); margins only in LTR limit — verify.
+- LQG: K_r = BᵀX, K_f = YCᵀ (two AREs); margins only in LTR limit — verify. 2e: add integral action by augmenting the plant with the integrator state before the LQG solve, not by bolting on a PI in series.
 - H∞ coprime: two Riccatis + γ-iteration; γ_opt explicit, no iteration for the stability-radius controller.
 - Loop shaping: G_s = W1 G W2 → coprime synth → K = W1 K_s W2; check α(G_s).
 - D-K: alternate H∞ solve on D N D⁻¹ and D update; local minima — try multiple starts.
+
+## LMI quick (ch12, 2e)
+- Form: find x with F₀ + Σ xᵢFᵢ ≺ 0 (Hermitian, affine) — convex, solver-grade.
+- Rewrites: Lyapunov AᴴP+PA ≺ 0; ‖G‖∞ < γ via bounded-real LMI in P; Schur complement [A B; Bᴴ C] ≺ 0 ⇔ C ≺ 0, A−BC⁻¹Bᴴ ≺ 0.
+- Analysis = convex; synthesis = bilinear → change variables (Y = KX) or Youla Q; true BMIs lose convexity guarantees.
+- Use when: multi-objective (H∞ + pole placement + input peak), static output feedback, μ upper bound via D-variables — anything Riccati can't express.
 
 ## The book's numbers to remember
 - Distillation column A: κ(G) = 141.7, λ₁₁ = 35.1; 20% input uncertainty destabilizes inverse control; μ-optimal peak 0.974.

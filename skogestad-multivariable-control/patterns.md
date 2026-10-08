@@ -46,13 +46,25 @@ Model measured/known disturbances as extra inputs with G_d into the generalized 
 ## P14. Verify with the closed-loop scoreboard
 Final analysis = σ̄(S), σ̄(T), σ̄(T_I), σ̄(KS) plots vs weights + time-domain sims on the nonlinear model. M_s ≤ ~2, small T/T_I peaks, actuator limits respected. μ peak < 1 with margin. If any fail, the failure localizes to a pattern above — go back, not sideways.
 
+## P15. SIMC: the one-knob PID backend (2e, ch2)
+After P2/P3 say the I/O pair is feasible, get a defensible PID in one line: identify scaled k, τ₁ (, τ₂), θ (half rule for the neglected lags), then set τ_c = θ for tight robust control and read off K_c, τ_I, τ_D from the cheatsheet table. τ_c is the robustness dial: raise it if ‖w_I T‖∞ fails. Never tune ZN first and verify later — ZN has no robustness budget.
+
+## P16. Self-optimizing variable selection (2e, ch10.3)
+Before designing the optimizing layer, ask "which variable can I just hold constant?" Check the gradient condition (optimum of J lies at constant c for all disturbances considered), then rank candidates by σ_max(J_yy^{1/2}(∂c/∂d)⁻¹) and feasibility over the disturbance range. A winner kills the on-line optimizer for that layer (cruise control on the speed limit; flowrates in distillation).
+
+## P17. Reach for LMIs when Riccati can't express the spec (2e, ch12)
+Multi-objective, static output feedback, pole-region placement + H∞ together, μ upper bounds: write the affine Hermitian inequality (Lyapunov/bounded-real/Schur rewrites), solve convex feasibility. If the controller appears bilinearly, change variables (Y = KX) or Youla-Q before accepting a BMI.
+
 ## Anti-pattern index
 - Tuning on an uncontrollable I/O pair (violates P2)
+- ZN tuning with no robustness budget (violates P15 — ch2's own example fails RS at 33% error)
 - Decoupling a large-RGA plant (violates P4)
 - Canceling MIMO pole-zero pairs without direction check (violates P5)
 - Complex-Δ claims for real parametric problems without acknowledging conservatism (P6/P7)
 - Forgetting NS check with μ (P7)
 - Over-shaping past the coprime stability radius (P8)
 - Pairing by largest |g_ij| alone (P9)
+- On-line optimizing what a constant setpoint holds for free (violates P16)
+- Feeding bilinear controller terms to a convex LMI solver (violates P17)
 - Truncating controllers then rescaling prefilters (P12)
 - Trusting idealized models' frequency-independent conditioning (P12/P14 — distillation 5-state vs 2×2 idealization)
