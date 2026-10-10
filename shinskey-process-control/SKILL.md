@@ -30,8 +30,15 @@ A chapter-by-chapter distill of Shinskey's *Process Control Systems: Application
 | `chapters/ch11-mass-transfer-operations.md` | 11 Mass-Transfer Operations | Distillation composition control, pressure and level schemes, evaporators, drying |
 | `chapters/ch12-batch-process-control.md` | 12 Batch Process Control | Batch sequencing, heat-up/cool-down control, recipe-driven operation, end-point detection |
 
+## Companion files
+
+- `glossary.md` — notation decoded (P/I/D conventions, λ, Kt/τt, γ, ti, α, S, installed characteristic…) plus the book's recurring maxims.
+- `patterns.md` — 16 cross-chapter design patterns + 8 diagnosis playbooks (limit-cycle triage by period and waveform, windup signature, inverse response…).
+- `cheatsheet.md` — the tuning tables and formulas worth pulling fast (Table 4.4, batch rules, reactor stability squeeze, feedforward compensator settings, RGA rules).
+
 ## Provenance and caveats
 
 - Chapter files were distilled from the **3rd-edition** text layer (`Calibre Library/Shinskey, F. Greg/Process-control systems _ application, design, and adjustment (16474)/`, 548 pp), which is also the OpenMAIC grounding source. The plan of record notes the 4th edition as the citation target; chapter structure is identical and equation numbering agrees, but where an audit turns on an edition difference, defer to whichever edition the reader holds open and spot-check the 4th-ed scan.
-- **One damaged formula**: in Ch. 9 (drum level), the first approximation for resonant gain `Gn1` in the 3rd-ed text layer is unrecoverable; the second approximation `Gn = Gn1/[1 − 1/(2Gn1)²]` and the qualitative rule are intact. Do not quote a value for `Gn1` without the printed page.
+- **4th-edition scan now extracted** (2026-10-10, PP-OCRv6 via pdf-inspector): `~/.knowledge/shinskey/pi/shinskey4e-pi.md` (229-page two-up scan of the McGraw-Hill 4th ed; raw PDF + sha256 in `~/.knowledge/shinskey/raw/`). Key constants spot-verified against it: I = 1.6Kpτd and P = 250Kp (Ch. 1), τn = 3.94ti (Ch. 9), Eqs. 10.22–10.23 (reactor stability), Eq. 11.19 (column RGA from curve slopes). The damaged `Gn1` passage (Ch. 3, Eq. 3.24 context) is still unrecoverable in this scan.
+- **One damaged formula**: in Ch. 3 (level loops, resonant-gain estimate), the first approximation for resonant gain `Gn1` is unrecoverable in both text layers; the second approximation `Gn = Gn1/[1 − 1/(2Gn1)²]` (3.24) and the qualitative rule are intact. Do not quote a value for `Gn1` without the printed page.
 - Formula and table values marked in the chapter files are transcribed from the book; treat them as source data, not as independently verified results.

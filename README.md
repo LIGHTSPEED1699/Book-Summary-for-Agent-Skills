@@ -27,7 +27,7 @@ Every book folder follows the same layout:
 | `skogestad-multivariable-control` | Skogestad & Postlethwaite, *Multivariable Feedback Control: Analysis and Design* (1st ed., 1996) | 12 + appendix |
 | `astrom-adaptive-control` | Åström & Wittenmark, *Adaptive Control* (1st ed., 1989) | 13 |
 | `stengel-optimal-control-estimation` | Stengel, *Optimal Control and Estimation* (McGraw-Hill, 1994) | 6 + epilogue |
-| `shinskey-process-control` | Shinskey, *Process Control Systems: Application, Design, and Adjustment* | chapter-by-chapter |
+| `shinskey-process-control` | Shinskey, *Process Control Systems: Application, Design, and Adjustment* (4th ed., 1996) | 12 chapters |
 | `csa-c22-1` | CSA C22.1:24, *Canadian Electrical Code, Part I* (2024, 26th ed.) | section-by-section |
 | `csa-b149-3` | CSA B149.3:25, *Code for the field approval of fuel-related components on appliances* | section-by-section |
 
