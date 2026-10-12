@@ -34,6 +34,7 @@ Every book folder follows the same layout:
 | `hubbard-vector-calculus` | Hubbard & Burke Hubbard, *Vector Calculus, Linear Algebra and Differential Forms: A Unified Approach* (5th ed., 2009) | 7 chapters + appendix |
 | `strang-differential-equations-linear-algebra` | Strang, *Differential Equations and Linear Algebra* (2014, Wellesley-Cambridge) | 8 chapters + appendix |
 | `needham-visual-complex-analysis` | Needham, *Visual Complex Analysis* (1997, Oxford) | 12 chapters |
+| `penrose-road-to-reality` | Penrose, *The Road to Reality* (2004, Cape/Jonathan Cape) | 5 parts (35 chapters) |
 
 ## How to use with an agent
 

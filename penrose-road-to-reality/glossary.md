@@ -1,0 +1,29 @@
+# Glossary — The Road to Reality (Penrose)
+
+- **Amplitudes (complex)**: probability amplitudes; moduli squared give probabilities; the necessity of ℂ is a physical fact, not a convenience.
+- **Bekenstein-Hawking entropy**: S = A/4Gℏ (in Planck units A/4) — black-hole entropy proportional to horizon area, not volume.
+- **Betti numbers**: dimensions of de Rham cohomology groups; count independent q-dimensional holes.
+- **Connection (∇, gauge potential)**: rule for differentiating/covariantly transporting fields; the potential of a gauge field; curvature = its field strength.
+- **Cosmic censorship**: singularities from gravitational collapse are hidden behind event horizons (no naked singularities).
+- **Covariant derivative**: derivative corrected by a connection; its commutator measures curvature.
+- **de Rham cohomology H^q**: closed q-forms modulo exact q-forms; global topology detector; §15.6 links it to bundles/gauge.
+- **Exterior derivative d**: antisymmetric derivative on forms; d² = 0; unifies gradient/curl/divergence; ∫_M dα = ∫_{∂M} α (fundamental theorem of exterior calculus).
+- **Event horizon**: boundary of the region from which light cannot escape to future null infinity; generator of black-hole entropy.
+- **Fibre bundle**: space locally a product (base × fibre) globally twisted; fields = sections; gauge transformations = bundle automorphisms.
+- **Gravitational OR (objective reduction)**: Penrose's proposal — quantum superpositions collapse spontaneously when the gravitational self-energy E_G of the mass-difference reaches ~ℏ/τ; the physical R-process.
+- **Helicity / spin**: helicity = spin projection along motion; massless particles have ±helicity; graviton = spin 2, photon = spin 1.
+- **Hypercomplex numbers**: extensions of ℂ — quaternions ℍ (non-commutative), octonions 𝕆 (non-associative).
+- **Killing vector**: generator of a continuous isometry of a metric; pairs with Noether conserved quantities.
+- **Light cone / conformal structure**: null directions of the metric; angles/causality without scales — primary in twistor theory.
+- **Noether's theorem**: each continuous symmetry of the action ⟺ a conserved current/quantity.
+- **Objective reduction (OR)**: see gravitational OR.
+- **Octonions**: the 8-dimensional division algebra; alternative but non-associative; tied to exceptional groups.
+- **Penrose transform**: cohomology classes on (projective) twistor space ⟺ massless zero-rest-mass fields of helicity s on spacetime.
+- **Process U / Process R**: unitary deterministic evolution vs state-vector reduction (measurement); Penrose: R must become a real physical process (OR).
+- **Rapidity**: hyperbolic angle parametrizing Lorentz boosts; adds linearly (Minkowski hyperbolic geometry).
+- **Spinor**: 2-component object whose square gives a null vector/tetrad; the square root of geometry; SU(2) double cover of SO(3).
+- **Stress-energy tensor T_ab**: source of gravity (and of Noether energy-momentum); couples to the metric.
+- **Twistor (T ≅ ℂ⁴)**: a point of twistor space = a light ray in (compactified) Minkowski space; incidence ω = iμ + x^{AA'}π_{A'}.
+- **Two-spinor / spinor notation**: SL(2,ℂ) language for Minkowski vectors/tensors (v^{AA'}); the "third way" to geometry.
+- **Weyl curvature**: trace-free part of the Riemann tensor — the free gravitational field (tidal, waves); Penrose hypothesis: vanishes (≈0) at the big bang = low gravitational entropy.
+- **Weyl curvature hypothesis**: the past's specialness = vanishing Weyl curvature at the initial singularity; the geometric form of the past hypothesis.
