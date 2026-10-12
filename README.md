@@ -30,6 +30,7 @@ Every book folder follows the same layout:
 | `shinskey-process-control` | Shinskey, *Process Control Systems: Application, Design, and Adjustment* (4th ed., 1996) | 12 chapters |
 | `csa-c22-1` | CSA C22.1:24, *Canadian Electrical Code, Part I* (2024, 26th ed.) | section-by-section |
 | `csa-b149-3` | CSA B149.3:25, *Code for the field approval of fuel-related components on appliances* | section-by-section |
+| `linear-algebra-done-right` | Axler, *Linear Algebra Done Right* (4th ed., 2024, Springer open access) | 9 chapters |
 
 ## How to use with an agent
 
