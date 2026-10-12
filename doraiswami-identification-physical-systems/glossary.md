@@ -1,0 +1,27 @@
+# Glossary — Identification of Physical Systems (Doraiswami et al.)
+
+- **ANFIS**: adaptive neuro-fuzzy inference system; if-then rules extracted from labeled faulty/fault-free data; transparent universal approximator.
+- **Augmented/integrated model**: plant + disturbance + measurement-noise generating models combined into one ARMA difference-equation or state-space model — the book's single design object.
+- **Bayes decision strategy**: detection/isolation as hypothesis testing with fault priors and decision costs; threshold from expected risk.
+- **Coherence spectrum**: γ²_xy = |S_xy|²/(S_xx S_yy) ∈ [0,1]; frequency-domain correlation coefficient; quality flag on spectral estimates.
+- **Diagnostic parameter**: selectable parameter (physical or emulator γ) whose variation signatures a fault class; chosen for residual sensitivity.
+- **Ergodic process**: time averages = ensemble averages; the license for single-record statistics.
+- **Fault emulator**: cascade gain/delay blocks (γ_l, γ_a, γ_s) injected at sensors/actuators/leaks to replay faults offline for influence-vector estimation.
+- **Fisher information / Cramér-Rao**: I(θ) = E[(∂log p/∂θ)²]; var(θ̂) ≥ I⁻¹ for unbiased estimators; the information floor.
+- **GLT (generalized likelihood ratio test)**: likelihood ratio maximized over unknown fault magnitudes; the book's detection statistic.
+- **High-order LS method**: deliberately over-parametrized ARX fit, then principled order reduction.
+- **Influence vector**: partial derivative of the residual w.r.t. a diagnostic parameter — a fault class's signature direction in residual space.
+- **Internal model (principle)**: zero-input model of a signal class embedded in controller/filter and driven by the error; necessary for exact steady-state tracking/rejection.
+- **Integrated model order discrepancy**: identified order < physical order when SNR/excitation can't support the physics (two-tank: 4 → 2 + delay).
+- **KF bank**: bank of Kalman filters, each driven by a signal pair; residual verdicts + network topology locate faults in sensor networks.
+- **Likelihood function**: p(data; θ) as a function of θ; ML maximizes it.
+- **Mixed-sensitivity optimization**: H∞ design weighting sensitivity S, complementary T, and control effort KS.
+- **MMSE estimator**: θ̂ = E[θ|data]; optimal in mean-square; conditional mean of the posterior.
+- **PEM (prediction error method)**: minimize prediction error over a parametrized model class; iterative; consistent for general noise.
+- **Power/energy signal**: finite average power vs finite energy; finite records are energy signals.
+- **PSD (power spectral density)**: Fourier transform of autocorrelation (Wiener-Khinchin); power vs frequency.
+- **Residual (KF)**: e(k) = y(k) − ĉ(k); white iff model matched; the diagnosis instrument.
+- **RLS**: recursive least squares; Kalman-gain/Riccati recursion for streaming parameter estimates.
+- **Soft sensor**: identified model + Kalman filter estimating an unmeasured variable in real time.
+- **Two-stage identification**: Stage I consistent reference-driven model; Stage II plant ID from decorrelated prediction — closed-loop consistency.
+- **WSS (wide-sense stationary)**: constant mean, lag-only covariance; the class correlation statistics estimate.

@@ -1,0 +1,24 @@
+# Glossary — Subspace Methods for System Identification (Katayama)
+
+- **Balanced realization**: coordinates where controllability and observability Gramians are equal and diagonal (diag σᵢ); σᵢ = Hankel singular values; truncation of small σᵢ = near-optimal reduction.
+- **CCA (canonical correlation analysis)**: maximizes correlations between linear combinations of two random vectors; canonical correlations = singular values of the whitened cross-covariance; canonical variates = the maximizing coordinates.
+- **Coercive spectrum**: Φ(e^{jω}) ≥ δI > 0 (strictly positive real, uniformly); the condition licensing finite-covariance-window realization.
+- **Data matrix**: stacked block-Hankel matrix of input-output samples, W = [U; Y]; contains the state sequence as a hidden factor.
+- **Extended observability matrix 𝒪_i**: [C; CA; …; CA^{i−1}]; its column space encodes the state coordinates up to similarity.
+- **Fundamental rank lemma (Lemma 6.3)**: after deleting output-Hankel rows dependent on the input Hankel, exactly n independent rows remain — the state order is a data rank.
+- **Hankel matrix**: constant anti-diagonals; block-Hankel of Markov parameters/covariances; finite rank ⟺ linear recursion ⟺ finite-dimensional system.
+- **Innovations**: one-step prediction errors; always white; drive the innovations (ARMA) representation; the Kalman filter's ε.
+- **LQ decomposition**: QR's dual for wide matrices (A = L Q); produces the column operations that zero input effects in data matrices.
+- **Markov parameters**: g₀ = D, g_k = CA^{k−1}B — impulse-response blocks; entries of the deterministic Hankel matrix.
+- **MOESP**: past input/output data → oblique projection → SVD → least squares; the ch6.5 method.
+- **N4SID**: subspace method estimating the state sequence first, then regressing (Algorithm B flavor, ch10).
+- **Oblique projection**: projection onto a subspace *along* another (not orthogonal); idempotent, non-symmetric; annihilates input terms while preserving state terms.
+- **ORT (Realization Technique)**: ch9's method — LQ split of deterministic/stochastic components, then realization of each; differs from PO-MOESP in projection identities.
+- **PE (persistently exciting)**: input whose k-stacked sample covariance has full row rank (order k ≥ needed); Appendix B Def B.1; Assumptions 6.1/9.3 A2.
+- **Positive real (PR) matrix function**: analytic outside the unit circle with Φ(e^{jω}) + Φᵀ(e^{jω}) ≥ 0; PR of the spectral density ⟺ existence of a Markov model (Faurre).
+- **Predictor spaces**: projections of the future onto the past (and vice versa); their overlap is the state space.
+- **Riccati equation (ARE/DARE)**: fixed point of the prediction-covariance recursion; its stabilizing solution gives the stationary Kalman gain and the boundary stochastic realizations.
+- **Shift invariance**: deleting rows of 𝒪_i gives a shifted observability matrix; A = 𝒪̂^†·shift(𝒪̂) — reads the state matrix off a subspace estimate.
+- **Stochastic realization problem (Faurre)**: find all minimal Markov models simulating a given covariance sequence/spectrum; solutions parameterized by an LMI on the state covariance.
+- **Superposition lemma (Lemma 6.4)**: with PE input, any length-i input-output pair is a linear combination of the data matrix columns — data is universal.
+- **Youla/joint input-output parametrization**: the plant recovered from an identified joint (u,y) closed-loop model.
