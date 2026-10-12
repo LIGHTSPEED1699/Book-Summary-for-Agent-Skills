@@ -31,6 +31,7 @@ Every book folder follows the same layout:
 | `csa-c22-1` | CSA C22.1:24, *Canadian Electrical Code, Part I* (2024, 26th ed.) | section-by-section |
 | `csa-b149-3` | CSA B149.3:25, *Code for the field approval of fuel-related components on appliances* | section-by-section |
 | `linear-algebra-done-right` | Axler, *Linear Algebra Done Right* (4th ed., 2024, Springer open access) | 9 chapters |
+| `hubbard-vector-calculus` | Hubbard & Burke Hubbard, *Vector Calculus, Linear Algebra and Differential Forms: A Unified Approach* (5th ed., 2009) | 7 chapters + appendix |
 
 ## How to use with an agent
 
