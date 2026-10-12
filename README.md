@@ -33,6 +33,7 @@ Every book folder follows the same layout:
 | `linear-algebra-done-right` | Axler, *Linear Algebra Done Right* (4th ed., 2024, Springer open access) | 9 chapters |
 | `hubbard-vector-calculus` | Hubbard & Burke Hubbard, *Vector Calculus, Linear Algebra and Differential Forms: A Unified Approach* (5th ed., 2009) | 7 chapters + appendix |
 | `strang-differential-equations-linear-algebra` | Strang, *Differential Equations and Linear Algebra* (2014, Wellesley-Cambridge) | 8 chapters + appendix |
+| `needham-visual-complex-analysis` | Needham, *Visual Complex Analysis* (1997, Oxford) | 12 chapters |
 
 ## How to use with an agent
 
