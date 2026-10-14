@@ -1,0 +1,38 @@
+# Glossary — Cybernetics (Wiener)
+
+- **Cybernetics** — from Greek kybernetes (steersman); "the entire theory of control, communication, and statistical organization of the system" (as defined in this book).
+- **Negative feedback** — returned information about the effector's performance that opposes the departure of the controlled quantity from the controlling quantity.
+- **Servomechanism** — a feedback-controlled position/velocity/temperature regulator; the engineering model of purposive behavior.
+- **Ataxia** — uncoordinated movement with intact muscle strength: tabes dorsalis (lost proprioceptive feedback) or cerebellar tremor (mis-proportioned feedback).
+- **Purpose tremor vs Parkinsonian tremor** — task-emergent (cerebellar, voluntary loop) vs rest tremor (brain-stem, postural loop).
+- **Homeostasis** — the body's assembly of slow feedback thermostats (temperature, osmotic pressure, pH, waste, heart rate, calcium).
+- **Message / noise** — a message is one member of an ensemble of functions of time with a probability distribution; noise is an independent corrupting ensemble.
+- **Information** — I = −Σ p_i log₂ p_i (bits); continuous −∫p log p; equals negative entropy; measures organization.
+- **Maxwell's demon** — feedback sorter whose received information is negative entropy that must be counted in the total; demons can't beat the second law for free.
+- **Stationary (statistical equilibrium) time series** — ensemble distribution invariant under time translation T_λ.
+- **Ergodic hypothesis** — time average = ensemble average; the license to do statistics on one record.
+- **Autocorrelation** — φ(τ) = mean of f(t+τ)f*(t); **power spectrum** — its Fourier transform (**Wiener–Khinchin theorem**).
+- **Causal operator** — output = ∫₀^∞ a(τ) f(t−τ) dτ; linear, time-invariant, past-only.
+- **A(z)** — transfer function (representation of the operator as a function of frequency); bounded holomorphic in right half-planes.
+- **Wiener stability criterion** — feedback λ stable iff −1/λ is an exterior point of the curve A(iy); interior → increasing oscillation; boundary → sustained.
+- **Relaxation oscillation** — non-linear self-sustained oscillation with determinate amplitude and frequency, indeterminate phase (van der Pol; organ pipe; gas-explosion clock).
+- **Secular perturbation** — parameters changing slowly relative to the oscillation period; treat as linear with slowly varying constants.
+- **Anticipatory feedback** — loop minimizing the *predicted* error (duck shooting, AA fire) via an in-loop predictor/compensator.
+- **Informative feedback** — probing the load with weak high-frequency dither and filtering the response to adapt the compensator (driving on ice).
+- **Analogy vs numerical machine** — continuous-scale vs choice-among-contingencies computation; binary numerical wins on cost of accuracy.
+- **All-or-none** — neuron fires stereotypedly or rests; relay property of nerve cells; **refractory period**, **fusion interval**, **inhibitory synapse**.
+- **Specious present** — the working "now" held by reverberating closed circuits.
+- **Circulating vs permanent memory** — active-state information vs long-time synaptic permeability stores; functional mental illness = disease of both.
+- **Internuncial pool** — interchangeable set of neural channels between levels; redundancy substrate.
+- **Group invariance / Gestalt** — sameness of form = equality of Q(TS) integrated over the transformation group (invariant/Haar measure).
+- **Group-scanning assembly** — layered neural hardware averaging over transformations; candidate permanent subassembly for form recognition.
+- **Alpha rhythm** — ~10 Hz EEG sweep; strongest eyes-closed; candidate neural clock/gating carrier.
+- **Gating** — clock-synchronized combination of impulses; synapses need coincident arrival within the fusion interval.
+- **Ontogenetic / phylogenetic learning** — individual experience vs racial evolution by reproduction+variation+selection.
+- **First-order / second-order programming** — acting with fixed valuations vs refitting valuations from recorded experience ("a learning machine operates by non-linear feedback").
+- **Transducer** — device mapping one input function of time to an output determined by the input's past; linear or non-linear.
+- **Wiener/Gabor canonical form** — non-linear transducer = Σ fixed non-linear elements (Hermite polynomials in Laguerre coefficients of the input past) with adjustable linear coefficients, fitted by least squares over the input ensemble.
+- **Shot noise / tube noise** — universal ergodic (metric transitive) random input enabling coefficient measurement by time-averaging.
+- **Template reproduction** — gene/virus copying; Wiener's analogy: automatic coefficient transfer from black box to white-box replica.
+- **After-discharge** — cortical ~10 Hz ringing after a flash (Rosenblith); evidence for neural oscillators.
+- **Frequency attraction** — non-linear coupling pulling oscillator frequencies together (alpha clumps + spectral gaps; AC busbars; circadian entrainment).

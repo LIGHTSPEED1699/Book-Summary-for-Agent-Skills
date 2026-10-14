@@ -38,6 +38,8 @@ Every book folder follows the same layout:
 | `katayama-subspace-identification` | Katayama, *Subspace Methods for System Identification* (2005, Springer) | 11 chapters + appendices |
 | `doraiswami-identification-physical-systems` | Doraiswami, Diduch & Stevenson, *Identification of Physical Systems* (2016, Wiley) | 13 chapters |
 | `hennessy-patterson-computer-architecture` | Hennessy, Patterson & Kozyrakis, *Computer Architecture: A Quantitative Approach* (6th ed., 2026, Morgan Kaufmann) | 7 chapters + appendices |
+| `wiener-cybernetics` | Wiener, *Cybernetics: Or Control and Communication in the Animal and the Machine* (1948/1961, MIT Press 2019 reprint) | 8 chapters + 2 supplementary (1961) |
+| `basu-panda-ramble-probability` | Basu & Panda, *A Ramble through Probability: How I Learned to Stop Worrying and Love Measure Theory* (SIAM 2024) | 16 chapters in 4 parts |
 
 ## How to use with an agent
 
