@@ -1,0 +1,58 @@
+# Glossary — CAQA 6th ed. terms and units
+
+- **Amdahl's law** — Speedup = 1/((1−F_enh) + F_enh/S_enh); F_enh = fraction of original *time* enhanced; ceiling 1/(1−F_enh).
+- **AMAT** — average memory access time = Hit time + Miss rate × Miss penalty; chains across levels.
+- **AFR / FIT / MTTF / MTTR / MTBF** — annualized failure rate; failures per 10⁹ device-hours; mean time to failure/repair/between failures. FITs of independent components add.
+- **Arithmetic intensity** — FLOPs per DRAM byte; roofline x-axis. **Ridge point** = peak FLOPs ÷ peak DRAM bandwidth.
+- **Bank conflict** — two accesses in a window hitting the same DRAM/cache bank; stride s conflicts with B banks when s is a multiple of B (given bank-busy ≤ latency).
+- **Big.LITTLE / P-core / E-core** — heterogeneous core mixes (ARM; Intel Alder Lake) trading single-thread perf vs efficiency.
+- **Bisection bandwidth** — bandwidth across the worst network cut; the WSC network metric.
+- **Bose-Einstein yield** — die yield = (1/(1+defects·area))^N, N≈33–35 (2022).
+- **BTB / RAS** — branch target buffer; return address stack.
+- **CAPEX/OPEX/TCO** — TCO ≈ CAPEX + 3–4×OPEX; WSC ≈ $7–10/W build, ~$2/W-year fully burdened.
+- **Chipkill / SECDED** — ECC surviving a whole DRAM chip / single-error-correct double-error-detect.
+- **Chiplet** — known-good-die assembly; beats reticle limits and mask economics.
+- **Chime / convoy** — vector: cycles for one vector op given infinite start-up overlap / set of chainable instructions.
+- **CMR / MPKI / MKPI** — coherence miss rate; misses per kilo-instruction (the right metric under speculation/prefetch).
+- **Clos / fat tree** — multistage switch topology with full bisection; WSC standard. **Oversubscription** — down:up link ratio (3:1 typical).
+- **Coherence vs consistency** — same-location value rules vs cross-location ordering rules.
+- **CPI equation** — CPU time = IC × CPI × cycle time; pipeline CPI = ideal + structural + data + control stalls.
+- **CXL** — cache-coherent interconnect for memory expansion/disaggregation over PCIe PHY.
+- **Dark silicon** — fraction of a chip that must stay unpowered under the thermal budget.
+- **Dennard scaling** — V and E scaled with geometry so power density stayed flat; ended ~2004.
+- **DSA** — domain-specific architecture; 8 pillars, 5 guidelines (Ch7).
+- **DVFS** — dynamic voltage/frequency scaling; energy ∝ V² per transition; 15% V cut → 0.72× energy.
+- **ECC / scrubbing** — error correction; background patrol reads fix soft errors before they accumulate.
+- **EPT/NPT** — hardware 2D page tables (Intel/AMD); TLB miss = 24 memory accesses vs 4.
+- **False sharing** — coherence invalidation caused by a neighbor's write to a different word in the same block.
+- **Flynn's taxonomy** — SISD/SIMD/MISD/MIMD; real machines hybrid.
+- **Forwarding/bypassing** — feeding pipeline results back without waiting for writeback.
+- **HBM** — stacked DRAM on interposer (2.5D); TB/s-class; side-band ECC.
+- **Hit/Miss under miss** — nonblocking cache serving hits while a miss is outstanding; needs MSHRs.
+- **Hedged request / tail tolerance** — sending redundant requests to beat tail latency.
+- **ILP/DLP/TLP/RLP** — instruction/data/thread/request-level parallelism.
+- **Inclusion property** — lower cache level holds a superset; noninclusive L3 breaks directory shortcuts but adds capacity.
+- **IOMMU / SR-IOV / VF** — DMA address translation; NIC partitioning into virtual functions.
+- **LR/SC** — load-reserved/store-conditional atomic pair (RISC-V/ARM).
+- **MESI/MESIF/MOESI** — coherence protocols (Exclusive/F variants; Owned = dirty-shared).
+- **MSHR** — miss status holding register; tracks outstanding misses.
+- **MSHI / NUCA** — nonuniform cache access: banked LLC with on-chip network.
+- **OCS** — optical circuit switch (MEMS); reconfigurable WSC topology.
+- **OOO / ROB / scheduler** — out-of-order execution; reorder buffer (in-order commit); wakeup+select structures.
+- **PUE / DCiE** — power usage effectiveness = facility/IT power (Google fleet 1.10).
+- **Race to halt/idle** — finish fast then sleep; energy = power × time.
+- **Release consistency / TSO / PSO / SC** — memory consistency models, relaxed → strict.
+- **Renaming** — architectural→physical register mapping; kills WAR/WAW.
+- **Row hammer** — DRAM disturb corruption from repeated row activations.
+- **SMT** — simultaneous multithreading; fine-grained threading on an OOO core.
+- **SPEC suites** — CPU2017 (Speed/Rates, base/peak, geometric mean of SPECRatios), SPECpower (ssj_ops/W across loads), SFS, TPC, MLPerf (DNN; fixed/benchmark/open divisions).
+- **Spectre/Meltdown** — transient execution attacks via speculation + cache side channels.
+- **Store sets / store buffer** — learned load-store dependence prediction; pending-store structure.
+- **Systolic array** — pipelined 2D MAC grid (TPU MXU 128×128); compiler must feed on time.
+- **TCO** — see CAPEX/OPEX. **Tail latency** — 99th/99.9th percentile response; the WSC product metric.
+- **TLB / huge pages** — page-table cache; 2MiB/1GiB pages cut misses.
+- **Torus** — mesh with wraparound links; TPU pod interconnect (3D, 4096 chips).
+- **Turbo boost** — clock up while under power/thermal envelope; not energy-neutral.
+- **Victim cache / way prediction / VIPT** — small LRU buffer for direct-mapped L1; predict the way; virtual-index physical-tag cache.
+- **VLIW / EPIC** — compiler-scheduled instruction packets; binary-compatibility trap killed Itanium; lives inside DSAs.
+- **WSC** — warehouse-scale computer; the datacenter as one machine.

@@ -37,6 +37,7 @@ Every book folder follows the same layout:
 | `penrose-road-to-reality` | Penrose, *The Road to Reality* (2004, Cape/Jonathan Cape) | 5 parts (35 chapters) |
 | `katayama-subspace-identification` | Katayama, *Subspace Methods for System Identification* (2005, Springer) | 11 chapters + appendices |
 | `doraiswami-identification-physical-systems` | Doraiswami, Diduch & Stevenson, *Identification of Physical Systems* (2016, Wiley) | 13 chapters |
+| `hennessy-patterson-computer-architecture` | Hennessy, Patterson & Kozyrakis, *Computer Architecture: A Quantitative Approach* (6th ed., 2026, Morgan Kaufmann) | 7 chapters + appendices |
 
 ## How to use with an agent
 
