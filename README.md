@@ -42,6 +42,7 @@ Every book folder follows the same layout:
 | `basu-panda-ramble-probability` | Basu & Panda, *A Ramble through Probability: How I Learned to Stop Worrying and Love Measure Theory* (SIAM 2024) | 16 chapters in 4 parts |
 | `puig-diagnosis-fault-tolerant-control` | Puig & Simani (eds.), *Diagnosis and Fault-Tolerant Control 1 & 2* (ISTE/Wiley 2021, 2 volumes) | 2 volumes, 14 chapters |
 | `nguyen-intelligent-fault-diagnosis` | Vachtsevanos, Lewis, Roemer, Hess & Wu, *Intelligent Fault Diagnosis and Prognosis for Engineering Systems* (Wiley 2006) | 8 chapters |
+| `goralski-illustrated-network` | Goralski, *The Illustrated Network: How Networks and Technology Are Changing the Way We Talk and Work* (2nd ed., Sybison 2020) | 34 chapters in 8 parts |
 
 ## How to use with an agent
 
