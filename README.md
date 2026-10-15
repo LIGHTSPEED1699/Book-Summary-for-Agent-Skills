@@ -43,6 +43,7 @@ Every book folder follows the same layout:
 | `puig-diagnosis-fault-tolerant-control` | Puig & Simani (eds.), *Diagnosis and Fault-Tolerant Control 1 & 2* (ISTE/Wiley 2021, 2 volumes) | 2 volumes, 14 chapters |
 | `nguyen-intelligent-fault-diagnosis` | Vachtsevanos, Lewis, Roemer, Hess & Wu, *Intelligent Fault Diagnosis and Prognosis for Engineering Systems* (Wiley 2006) | 8 chapters |
 | `goralski-illustrated-network` | Goralski, *The Illustrated Network: How Networks and Technology Are Changing the Way We Talk and Work* (2nd ed., Sybison 2020) | 34 chapters in 8 parts |
+| `isermann-fault-diagnosis-systems` | Isermann, *Fault-Diagnosis Systems: From Fault Detection to Fault Tolerance* (Springer 2006) | 19 chapters |
 
 ## How to use with an agent
 
