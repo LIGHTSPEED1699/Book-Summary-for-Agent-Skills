@@ -38,4 +38,5 @@ Supervision is a pipeline: **faults** (additive/multiplicative, abrupt/incipient
 - `chapters/07-09-detection-estimation.md` — statistical change detection, signal analysis, parameter estimation
 - `chapters/10-13-residual-generation.md` — parity equations, observers, closed-loop supervision, PCA
 - `chapters/14-19-diagnosis-tolerance.md` — diagnosis, classification, knowledge-based methods, fault tolerance
+- `chapters/20-23-case-studies-terminology.md` — worked case studies (DC motor, throttle valve, pump-tank, suspension/tire) with full isolation results + the IFAC SAFEPROCESS glossary and math appendices
 - `glossary.md`, `patterns.md`, `cheatsheet.md`
