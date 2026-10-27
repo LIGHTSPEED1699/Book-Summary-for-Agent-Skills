@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+window.__loop = null;
+window.requestAnimationFrame = function(cb){ window.__loop = cb; return 0; };
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Servo Loop Stability Explorer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#11161f; --panel2:#161d29; --line:#232c3a;
+    --ink:#e8edf4; --muted:#8b98ab; --faint:#5b6675;
+    --amber:#f5a623; --amber2:#ffce6b; --cyan:#38d6c4; --red:#ff5d6c;
+    --green:#4ade80; --blue:#5b9dff; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;touch-action:manipulation}
+  .mono{font-family:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+    font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .serif{font-family:Georgia,'Times New Roman',serif}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--amber)}
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:14px}
+  .panel-h{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted)}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+
+  /* range sliders */
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;
+    background:transparent;cursor:pointer;touch-action:none}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;
+    background:linear-gradient(90deg,var(--amber) var(--fill,50%),#2a3444 var(--fill,50%))}
+  input[type=range]::-moz-range-track{height:6px;border-radius:6px;background:#2a3444}
+  input[type=range]::-moz-range-progress{height:6px;border-radius:6px;background:var(--amber)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:26px;height:26px;margin-top:-10px;border-radius:50%;background:#0a0e14;
+    border:3px solid var(--amber);box-shadow:0 0 0 4px rgba(245,166,35,.12),0 2px 8px rgba(0,0,0,.5);
+    transition:transform .12s ease}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#0a0e14;
+    border:3px solid var(--amber);box-shadow:0 0 0 4px rgba(245,166,35,.12)}
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
+  input[type=range]:focus-visible{outline:none}
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(245,166,35,.35)}
+
+  .btn{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+    border-radius:10px;padding:11px 14px;min-height:44px;cursor:pointer;
+    transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn:hover{border-color:var(--amber);color:var(--amber2);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn-primary{background:linear-gradient(180deg,#f5a623,#e08a12);color:#1a1206;
+    border-color:#f5a623;font-weight:700;box-shadow:0 6px 18px rgba(245,166,35,.25)}
+  .btn-primary:hover{color:#1a1206;border-color:#ffce6b}
+  .btn-ghost{background:transparent}
+  .btn.on{border-color:var(--cyan);color:var(--cyan);background:rgba(56,214,196,.08)}
+
+  .chip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:8px 10px;
+    border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--muted);cursor:pointer;transition:all .15s;min-height:40px;
+    display:flex;flex-direction:column;gap:2px;text-align:left}
+  .chip:hover{border-color:var(--amber);color:var(--ink)}
+  .chip .ct{color:var(--ink);font-size:12px}
+  .chip .cs{color:var(--faint);font-size:10px}
+
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .stat .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint)}
+  .stat .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;margin-top:2px}
+
+  .term{border-bottom:1px dotted var(--faint);cursor:help}
+  .term:hover{color:var(--amber2);border-color:var(--amber)}
+
+  .canvas-wrap{position:relative;width:100%;border-radius:14px;overflow:hidden;
+    border:1px solid var(--line);background:#080b11}
+  canvas{display:block;width:100%;touch-action:none}
+
+  .badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;
+    align-items:center;gap:8px;text-transform:uppercase}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .dot.run{animation:blink 1.1s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .legend i{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  .scroll::-webkit-scrollbar{width:8px}
+  .scroll::-webkit-scrollbar-thumb{background:#2a3444;border-radius:8px}
+
+  @keyframes pulse-highlight{0%,100%{outline-color:rgba(139,92,246,.8)}50%{outline-color:rgba(139,92,246,.35)}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pop{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+  .pop{animation:pop .35s ease}
+</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    renderMathInElement(document.body, katexOptions);
+
+    const observer = new MutationObserver((mutations) => {
+        let shouldRender = false;
+        mutations.forEach((mutation) => {
+            if (mutation.target &&
+                mutation.target.className &&
+                typeof mutation.target.className === 'string' &&
+                mutation.target.className.includes('katex')) {
+                return;
+            }
+            shouldRender = true;
+        });
+
+        if (shouldRender) {
+            safeRender();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
+
+    setInterval(() => {
+        const text = document.body.innerText;
+        if (text.includes('\\(') || text.includes('$$')) {
+            safeRender();
+        }
+    }, 2000);
+});
+</script>
+<style>
+html,body{margin:0;padding:0;width:1280px!important;max-width:1280px!important;
+  height:720px!important;max-height:720px!important;overflow:hidden!important;
+  box-sizing:border-box!important}
+*,*::before,*::after{box-sizing:inherit}
+header{padding:6px 16px!important}
+h1{font-size:20px!important}
+</style><style>/*fitcaps*/body > *:nth-child(2){max-height:634px!important;overflow-y:auto!important;overflow-x:hidden!important}
+body > *:nth-child(2){overflow-y:auto!important}</style></head>
+<body class="min-h-screen">
+
+<!-- ============ HEADER ============ -->
+<header class="border-b border-[#1a2230] bg-[#0a0e14]/95 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <svg width="34" height="34" viewBox="0 0 40 40" class="shrink-0">
+        <circle cx="20" cy="20" r="17" fill="none" stroke="#232c3a" stroke-width="1.5"/>
+        <path d="M4 20 Q10 6 16 20 T28 20 T40 20" fill="none" stroke="#f5a623" stroke-width="2"/>
+        <circle cx="20" cy="20" r="3" fill="#38d6c4"/>
+      </svg>
+      <div class="min-w-0">
+        <div class="eyebrow">Cybernetics · Feedback Systems</div>
+        <h1 class="serif text-lg sm:text-2xl font-bold leading-tight truncate">Servo Loop Stability Explorer</h1>
+      </div>
+    </div>
+    <div id="statusBadge" class="badge shrink-0"><span class="dot"></span><span id="statusText">STABLE</span></div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-3 sm:px-6 py-4">
+
+  <!-- ============ LAYOUT: controls + canvas ============ -->
+  <div class="flex flex-col md:flex-row gap-4">
+
+    <!-- CONTROLS -->
+    <aside id="controls" class="w-full md:w-[340px] shrink-0">
+      <div class="panel p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="panel-h">Loop Parameters</span>
+          <button id="toggleControls" class="btn btn-ghost md:hidden !min-h-[36px] !py-1 !px-3 text-xs">Hide</button>
+        </div>
+
+        <!-- integrators -->
+        <div class="mb-4">
+          <div class="flex items-baseline justify-between mb-1">
+            <label for="integrators-slider" class="text-sm font-semibold">Integrators <span class="text-[var(--faint)]">(lags)</span></label>
+            <span id="integrators-display" class="mono text-2xl font-bold text-[var(--amber)]">1</span>
+          </div>
+          <input id="integrators-slider" data-var="integrators" type="range" min="1" max="5" step="1" value="1" aria-label="Number of integrators">
+          <div class="flex justify-between text-[10px] mono text-[var(--faint)] mt-1">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+          </div>
+          <p class="text-[11px] text-[var(--muted)] mt-2 leading-relaxed">
+            Each integrator adds a <span class="term" title="A delay in the loop that shifts the phase of the signal.">lag</span> of 90° of phase.
+            More integrators = faster response but more phase to lose before the loop goes unstable.
+          </p>
+        </div>
+
+        <div class="divider my-3"></div>
+
+        <!-- gain -->
+        <div class="mb-4">
+          <div class="flex items-baseline justify-between mb-1">
+            <label for="gain-slider" class="text-sm font-semibold">Loop Gain <span class="text-[var(--faint)]">K</span></label>
+            <span id="gain-display" class="mono text-lg font-bold text-[var(--cyan)]">1.00</span>
+          </div>
+          <input id="gain-slider" data-var="gain" type="range" min="0.1" max="10" step="0.1" value="1" aria-label="Loop gain">
+          <p class="text-[11px] text-[var(--muted)] mt-2 leading-relaxed">
+            Amplification of the <span class="term" title="The signal fed back from the output to the input.">feedback</span> signal. Higher gain speeds the response but erodes the <span class="term" title="The margin of phase or gain before the loop becomes unstable.">stability margin</span>.
+          </p>
+        </div>
+
+        <div class="divider my-3"></div>
+
+        <!-- time constant -->
+        <div class="mb-4">
+          <div class="flex items-baseline justify-between mb-1">
+            <label for="tau-slider" class="text-sm font-semibold">Time Constant <span class="text-[var(--faint)]">τ</span></label>
+            <span id="tau-display" class="mono text-lg font-bold text-[var(--purple)]">1.00 s</span>
+          </div>
+          <input id="tau-slider" data-var="tau" type="range" min="0.2" max="3" step="0.05" value="1" aria-label="Time constant">
+          <p class="text-[11px] text-[var(--muted)] mt-2 leading-relaxed">
+            The <span class="term" title="The time for a first-order element to reach ~63% of its final value.">time constant</span> of each lag. Larger τ = slower, more sluggish loop.
+          </p>
+        </div>
+
+        <div class="divider my-3"></div>
+
+        <!-- buttons -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button id="mainBtn" class="btn btn-primary col-span-2" aria-label="Start or pause simulation">▶ START</button>
+          <button id="resetBtn" class="btn" aria-label="Reset simulation">↺ RESET</button>
+          <button id="stepBtn" class="btn" aria-label="Advance one step">⏭ STEP</button>
+        </div>
+
+        <!-- toggles -->
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <button id="toggleBode" class="btn on" aria-pressed="true">Bode Plot</button>
+          <button id="toggleNyq" class="btn on" aria-pressed="true">Nyquist</button>
+          <button id="togglePolar" class="btn" aria-pressed="false">Polar</button>
+          <button id="toggleGrid" class="btn on" aria-pressed="true">Grid</button>
+        </div>
+
+        <div class="divider my-3"></div>
+
+        <!-- presets -->
+        <div class="panel-h mb-2">Presets</div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="chip" data-preset="stable"><span class="ct">Stable</span><span class="cs">n=1 · K=1 · τ=1</span></button>
+          <button class="chip" data-preset="marginal"><span class="ct">Marginal</span><span class="cs">n=3 · K=1 · τ=1</span></button>
+          <button class="chip" data-preset="oscillating"><span class="ct">Oscillating</span><span class="cs">n=3 · K=8 · τ=1</span></button>
+          <button class="chip" data-preset="unstable"><span class="ct">Unstable</span><span class="cs">n=4 · K=6 · τ=1</span></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CANVAS + READOUTS -->
+    <section class="flex-1 min-w-0 flex flex-col gap-4">
+
+      <!-- readouts -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="stat"><div class="k">Gain Margin</div><div class="v" id="gmVal">∞</div></div>
+        <div class="stat"><div class="k">Phase Margin</div><div class="v" id="pmVal">—</div></div>
+        <div class="stat"><div class="k">Osc. Freq ω₀</div><div class="v" id="w0Val">—</div></div>
+        <div class="stat"><div class="k">Damping ζ</div><div class="v" id="zetaVal">—</div></div>
+      </div>
+
+      <!-- time response -->
+      <div class="canvas-wrap reveal" style="height:300px">
+        <canvas id="timeCanvas" aria-label="Time response of the servo loop"></canvas>
+      </div>
+
+      <!-- frequency response -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="canvas-wrap reveal" style="height:280px">
+          <canvas id="bodeCanvas" aria-label="Bode magnitude and phase plot"></canvas>
+        </div>
+        <div class="canvas-wrap reveal" style="height:280px">
+          <canvas id="nyqCanvas" aria-label="Nyquist plot"></canvas>
+        </div>
+      </div>
+
+      <!-- legend -->
+      <div class="panel p-3 reveal">
+        <div class="legend">
+          <span><i style="background:#f5a623"></i>Output y(t)</span>
+          <span><i style="background:#5b9dff"></i>Setpoint r(t)</span>
+          <span><i style="background:#38d6c4"></i>Open-loop |L|</span>
+          <span><i style="background:#a78bfa"></i>Open-loop phase</span>
+          <span><i style="background:#ff5d6c"></i>−180° / −1 line</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ EXPLANATION ============ -->
+  <section class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="panel p-5 reveal">
+      <div class="eyebrow mb-2">The Servomechanism</div>
+      <p class="text-sm text-[var(--muted)] leading-relaxed">
+        A <span class="term" title="A system that uses feedback to make its output follow a desired reference.">servomechanism</span> is a closed loop: it measures its own output, compares it to a desired
+        <span class="term" title="The desired reference value the system tries to track.">setpoint</span>, and drives the actuator to reduce the error. Wiener's
+        <span class="term" title="The science of control and communication in the animal and the machine (1948).">cybernetics</span> (from Greek <em>kubernētēs</em>, "steersman") is precisely the study of such feedback systems.
+      </p>
+    </div>
+    <div class="panel p-5 reveal">
+      <div class="eyebrow mb-2">Why Lags Destabilize</div>
+      <p class="text-sm text-[var(--muted)] leading-relaxed">
+        Every integrator contributes 90° of <span class="term" title="The angular offset between input and output of a signal.">phase lag</span>. Feedback is stabilizing only while it stays negative.
+        Once the loop's phase reaches −180°, the feedback flips to positive and the loop <span class="term" title="A self-reinforcing cycle where output amplifies the error.">regenerates</span> its own error — the onset of oscillation.
+      </p>
+    </div>
+    <div class="panel p-5 reveal">
+      <div class="eyebrow mb-2">The Trade-off</div>
+      <p class="text-sm text-[var(--muted)] leading-relaxed">
+        More integrators and higher gain make the loop <em>responsive</em> — it tracks faster and rejects <span class="term" title="Unwanted disturbance or noise entering the loop.">noise</span> better. But they consume the
+        <span class="term" title="The amount of phase or gain headroom before instability.">stability margin</span>. The Nyquist plot shows the moment the loop crosses the critical −1 point.
+      </p>
+    </div>
+  </section>
+
+  <footer class="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 text-center">
+    <p class="text-xs text-[var(--faint)] mono">
+      Model: L(s) = K / (1 + sτ)ⁿ · Closed loop T(s) = L/(1+L) · Simulated with a discrete integrator (Euler).
+      <br>Terms defined inline on first use. Space = start/pause · R = reset · S = step.
+    </p>
+  </footer>
+</main>
+
+<!-- ============ WIDGET CONFIG ============ -->
+<script type="application/json" id="widget-config">
+{
+  "type": "simulation",
+  "concept": "servo_loop_stability",
+  "description": "Manipulate the number of integrators (lags) and loop gain in a feedback servomechanism to observe the onset of oscillation and instability. Visualizes the trade-off between responsiveness and stability via time response, Bode, and Nyquist plots.",
+  "variables": [
+    { "name": "integrators", "label": "Integrators (lags)", "min": 1, "max": 5, "default": 1, "unit": "" },
+    { "name": "gain", "label": "Loop Gain K", "min": 0.1, "max": 10, "step": 0.1, "default": 1, "unit": "" },
+    { "name": "tau", "label": "Time Constant τ", "min": 0.2, "max": 3, "step": 0.05, "default": 1, "unit": "s" }
+  ],
+  "presets": [
+    { "name": "Stable", "variables": { "integrators": 1, "gain": 1, "tau": 1 } },
+    { "name": "Marginal", "variables": { "integrators": 3, "gain": 1, "tau": 1 } },
+    { "name": "Oscillating", "variables": { "integrators": 3, "gain": 8, "tau": 1 } },
+    { "name": "Unstable", "variables": { "integrators": 4, "gain": 6, "tau": 1 } }
+  ]
+}
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  const state = {
+    running:false, paused:false, ended:false,
+    integrators:1, gain:1, tau:1,
+    t:0,
+    showBode:true, showNyq:true, showPolar:false, showGrid:true
+  };
+
+  // ---------- simulation buffers ----------
+  const N = 5;
+  let x = new Float64Array(N);   // integrator states
+  let y = 0;                     // output
+  let hist = [];                 // {t, y, r} - the whole run, never trimmed
+  const HIST_TARGET = 4000;      // point cap; the buffer is halved when it is exceeded
+  const DT = 0.004;              // sim step
+  const SUBSTEPS = 4;            // steps per frame
+  const T_SPAN = 12;             // seconds shown
+  const RAMP = 1.0;              // setpoint ramp time
+  const CLIP = 12;               // output clip (unstable)
+
+  function resetSim(){
+    x.fill(0); y = 0; hist = []; state.t = 0;
+  }
+
+  // ---------- math ----------
+  function setpoint(t){ return Math.min(1, t/RAMP); }
+
+  function stepSim(){
+    const n = state.integrators, K = state.gain, tau = state.tau;
+    const r = setpoint(state.t);
+    const e = r - y;
+    for(let i=0;i<n;i++){
+      x[i] += DT * (i===0 ? K*e : x[i-1]);
+    }
+    y = x[n-1];
+    if(y > CLIP) y = CLIP; else if(y < -CLIP) y = -CLIP;
+    state.t += DT;
+    hist.push({t:state.t, y:y, r:r});
+    // ponytail: halve the buffer instead of shifting it, so the left (older) edge of
+    // the plot keeps its history; index 0 (t=0) is always kept. Ceiling: resolution
+    // halves every ~64 s of run. Upgrade path: min/max envelope decimation.
+    if(hist.length > HIST_TARGET) hist = hist.filter((_, i) => !(i & 1));
+  }
+
+  // open-loop L(jw) = K / (1 + j w tau)^n
+  function openLoop(w){
+    const n = state.integrators, K = state.gain, tau = state.tau;
+    const mag = K / Math.pow(Math.hypot(1, w*tau), n);
+    const phase = -n * Math.atan(w*tau);
+    return { mag, phase, re: mag*Math.cos(phase), im: mag*Math.sin(phase) };
+  }
+
+  // closed-loop poles (roots of (1+s tau)^n + K = 0)
+  function closedLoopPoles(){
+    const n = state.integrators, K = state.gain, tau = state.tau;
+    const r = Math.pow(K, 1/n);
+    const poles = [];
+    for(let k=0;k<n;k++){
+      const ang = (Math.PI + 2*Math.PI*k)/n;
+      poles.push({ re: -r*Math.cos(ang)/tau, im: -r*Math.sin(ang)/tau });
+    }
+    return poles;
+  }
+
+  // ---------- metrics ----------
+  function computeMetrics(){
+    const n = state.integrators, K = state.gain, tau = state.tau;
+    const poles = closedLoopPoles();
+    let maxRe = -Infinity, w0 = 0, zeta = 0;
+    for(const p of poles){
+      if(p.re > maxRe) maxRe = p.re;
+      const m = Math.hypot(p.re, p.im);
+      if(m > w0){ w0 = m; zeta = m>0 ? -p.re/m : 0; }
+    }
+    const unstable = maxRe > 1e-6;
+    const margin = maxRe < -1e-6 ? -maxRe : 0;
+
+    // gain margin: at phase = -180
+    let gm = Infinity, wpc = 0;
+    if(n >= 2){
+      const wpcReal = Math.tan(Math.PI/n)/tau;
+      const magAt = K / Math.pow(Math.hypot(1, wpcReal*tau), n);
+      gm = 1/magAt; wpc = wpcReal;
+    }
+    // phase margin: at |L| = 1
+    let pm = 0, wgc = 0;
+    if(n === 1){ pm = 90; }
+    else {
+      const wgcReal = Math.pow(K, 1/n)/tau;
+      pm = 180 - n*Math.atan(wgcReal*tau); wgc = wgcReal;
+    }
+
+    let status, color;
+    if(unstable){ status='UNSTABLE'; color='#ff5d6c'; }
+    else if(margin < 0.12){ status='MARGINAL'; color='#f5a623'; }
+    else { status='STABLE'; color='#4ade80'; }
+
+    return { unstable, margin, w0, zeta, gm, wpc, pm, wgc, status, color };
+  }
+
+  // ---------- canvas helpers ----------
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  function fit(canvas){
+    const r = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width*dpr));
+    const h = Math.max(1, Math.round(r.height*dpr));
+    if(canvas.width!==w || canvas.height!==h){ canvas.width=w; canvas.height=h; }
+    return { w, h };
+  }
+  function rr(ctx,x,y,w,h,rad){
+    ctx.beginPath();
+    ctx.moveTo(x+rad,y);
+    ctx.arcTo(x+w,y,x+w,y+h,rad);
+    ctx.arcTo(x+w,y+h,x,y+h,rad);
+    ctx.arcTo(x,y+h,x,y,rad);
+    ctx.arcTo(x,y,x+w,y,rad);
+    ctx.closePath();
+  }
+  function fmt(v, d){ if(!isFinite(v)) return '∞'; return v.toFixed(d); }
+
+  // ---------- TIME PLOT ----------
+  function drawTime(){
+    const c = document.getElementById('timeCanvas');
+    const {w,h} = fit(c);
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const padL=46*dpr, padR=14*dpr, padT=30*dpr, padB=26*dpr;
+    const pw = w-padL-padR, ph = h-padT-padB;
+    const yMin=-1.4, yMax=2.4;
+    const tMax = Math.max(T_SPAN, state.t);
+    const X = t => padL + (t/tMax)*pw;
+    const Y = v => padT + (1-(v-yMin)/(yMax-yMin))*ph;
+
+    // grid
+    if(state.showGrid){
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1*dpr;
+      for(let v=-1;v<=2;v++){ const yy=Y(v); ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(w-padR,yy); ctx.stroke(); }
+      for(let t=0;t<=tMax;t+=2){ const xx=X(t); ctx.beginPath(); ctx.moveTo(xx,padT); ctx.lineTo(xx,h-padB); ctx.stroke(); }
+    }
+    // zero line
+    ctx.strokeStyle='rgba(255,255,255,0.14)'; ctx.lineWidth=1*dpr;
+    ctx.beginPath(); ctx.moveTo(padL,Y(0)); ctx.lineTo(w-padR,Y(0)); ctx.stroke();
+
+    // axes labels
+    ctx.fillStyle='#5b6675'; ctx.font=(11*dpr)+'px JetBrains Mono, monospace'; ctx.textAlign='right';
+    for(let v=-1;v<=2;v++){ ctx.fillText(v, padL-6, Y(v)+4*dpr); }
+    ctx.textAlign='center';
+    for(let t=0;t<=tMax;t+=2){ ctx.fillText(t+'s', X(t), h-8*dpr); }
+
+    // setpoint
+    ctx.strokeStyle='#5b9dff'; ctx.lineWidth=1.6*dpr; ctx.setLineDash([5*dpr,4*dpr]);
+    ctx.beginPath();
+    for(let i=0;i<hist.length;i++){ const p=hist[i]; const xx=X(p.t), yy=Y(p.r); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // output
+    ctx.strokeStyle='#f5a623'; ctx.lineWidth=2.2*dpr; ctx.lineJoin='round';
+    ctx.beginPath();
+    for(let i=0;i<hist.length;i++){ const p=hist[i]; const xx=X(p.t), yy=Y(p.y); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }
+    ctx.stroke();
+
+    // current marker
+    if(hist.length){
+      const p=hist[hist.length-1];
+      ctx.fillStyle='#f5a623';
+      ctx.beginPath(); ctx.arc(X(p.t),Y(p.y),3.5*dpr,0,7); ctx.fill();
+    }
+
+    // title
+    ctx.fillStyle='#8b98ab'; ctx.font=(11*dpr)+'px JetBrains Mono, monospace'; ctx.textAlign='left';
+    ctx.fillText('TIME RESPONSE  y(t) vs setpoint r(t)', padL, 18*dpr);
+    ctx.textAlign='right';
+    ctx.fillStyle='#5b6675';
+    ctx.fillText('t = '+fmt(state.t,2)+' s', w-padR, 18*dpr);
+  }
+
+  // ---------- BODE ----------
+  function drawBode(){
+    const c = document.getElementById('bodeCanvas');
+    const {w,h} = fit(c);
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const padL=44*dpr, padR=14*dpr, padT=26*dpr, padB=24*dpr;
+    const pw=w-padL-padR, ph=h-padT-padB;
+    const wMin=0.05, wMax=100;
+    const lgMin=Math.log10(wMin), lgMax=Math.log10(wMax);
+    const X = w => padL + ((Math.log10(w)-lgMin)/(lgMax-lgMin))*pw;
+    const mMin=-40, mMax=40;
+    const Ym = m => padT + (1-(m-mMin)/(mMax-mMin))*ph;
+    const pMin=-270, pMax=0;
+    const Yp = p => padT + (1-(p-pMin)/(pMax-pMin))*ph;
+
+    // grid
+    if(state.showGrid){
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1*dpr;
+      for(let e=-1;e<=2;e++){ const xx=X(Math.pow(10,e)); ctx.beginPath(); ctx.moveTo(xx,padT); ctx.lineTo(xx,h-padB); ctx.stroke(); }
+      for(let m=-40;m<=40;m+=20){ const yy=Ym(m); ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(w-padR,yy); ctx.stroke(); }
+    }
+    // 0 dB line
+    ctx.strokeStyle='rgba(255,255,255,0.16)'; ctx.lineWidth=1*dpr;
+    ctx.beginPath(); ctx.moveTo(padL,Ym(0)); ctx.lineTo(w-padR,Ym(0)); ctx.stroke();
+    // -180 line
+    ctx.strokeStyle='rgba(255,93,108,0.5)'; ctx.setLineDash([4*dpr,4*dpr]);
+    ctx.beginPath(); ctx.moveTo(padL,Yp(-180)); ctx.lineTo(w-padR,Yp(-180)); ctx.stroke(); ctx.setLineDash([]);
+
+    // sample curve
+    const pts=[];
+    for(let i=0;i<=200;i++){
+      const wv = Math.pow(10, lgMin + (i/200)*(lgMax-lgMin));
+      const L = openLoop(wv);
+      pts.push({w:wv, db:20*Math.log10(L.mag), ph:L.phase*180/Math.PI});
+    }
+    // magnitude
+    ctx.strokeStyle='#38d6c4'; ctx.lineWidth=2*dpr; ctx.beginPath();
+    pts.forEach((p,i)=>{ const xx=X(p.w), yy=Ym(Math.max(mMin,Math.min(mMax,p.db))); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); });
+    ctx.stroke();
+    // phase
+    ctx.strokeStyle='#a78bfa'; ctx.lineWidth=2*dpr; ctx.beginPath();
+    pts.forEach((p,i)=>{ const xx=X(p.w), yy=Yp(Math.max(pMin,Math.min(pMax,p.ph))); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); });
+    ctx.stroke();
+
+    // markers
+    const M = computeMetrics();
+    if(M.wgc>0){ const xx=X(M.wgc); ctx.strokeStyle='rgba(56,214,196,0.6)'; ctx.setLineDash([3*dpr,3*dpr]);
+      ctx.beginPath(); ctx.moveTo(xx,padT); ctx.lineTo(xx,h-padB); ctx.stroke(); ctx.setLineDash([]); }
+    if(M.wpc>0){ const xx=X(M.wpc); ctx.strokeStyle='rgba(255,93,108,0.6)'; ctx.setLineDash([3*dpr,3*dpr]);
+      ctx.beginPath(); ctx.moveTo(xx,padT); ctx.lineTo(xx,h-padB); ctx.stroke(); ctx.setLineDash([]); }
+
+    // labels
+    ctx.fillStyle='#8b98ab'; ctx.font=(11*dpr)+'px JetBrains Mono, monospace'; ctx.textAlign='left';
+    ctx.fillText('BODE  |L(jω)| dB  &  ∠L(jω) °', padL, 16*dpr);
+    ctx.fillStyle='#5b6675'; ctx.textAlign='right';
+    ctx.fillText('ω (rad/s)', w-padR, h-8*dpr);
+  }
+
+  // ---------- NYQUIST ----------
+  function drawNyq(){
+    const c = document.getElementById('nyqCanvas');
+    const {w,h} = fit(c);
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,w,h);
+    const cx=w/2, cy=h/2;
+    const scale = Math.min(w,h)/2 * 0.82;
+    const X = re => cx + re*scale;
+    const Y = im => cy - im*scale;
+
+    // grid
+    if(state.showGrid){
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1*dpr;
+      for(let g=-2;g<=2;g++){
+        ctx.beginPath(); ctx.moveTo(X(g),0); ctx.lineTo(X(g),h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,Y(g)); ctx.lineTo(w,Y(g)); ctx.stroke();
+      }
+    }
+    // axes
+    ctx.strokeStyle='rgba(255,255,255,0.16)'; ctx.lineWidth=1*dpr;
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
+
+    // unit circle
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.setLineDash([3*dpr,3*dpr]);
+    ctx.beginPath(); ctx.arc(cx,cy,scale,0,7); ctx.stroke(); ctx.setLineDash([]);
+
+    // curve
+    const pts=[];
+    for(let i=0;i<=240;i++){
+      const wv = Math.pow(10, -2 + (i/240)*4);
+      const L = openLoop(wv);
+      pts.push(L);
+    }
+    ctx.strokeStyle='#38d6c4'; ctx.lineWidth=2*dpr; ctx.beginPath();
+    pts.forEach((p,i)=>{ const xx=X(p.re), yy=Y(p.im); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); });
+    ctx.stroke();
+
+    // -1 point
+    const M = computeMetrics();
+    const col = M.color;
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(X(-1),Y(0),5*dpr,0,7); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=1.5*dpr;
+    ctx.beginPath(); ctx.arc(X(-1),Y(0),10*dpr,0,7); ctx.stroke();
+    ctx.fillStyle=col; ctx.font=(11*dpr)+'px JetBrains Mono, monospace'; ctx.textAlign='center';
+    ctx.fillText('−1', X(-1), Y(0)-14*dpr);
+
+    // title
+    ctx.fillStyle='#8b98ab'; ctx.textAlign='left'; ctx.font=(11*dpr)+'px JetBrains Mono, monospace';
+    ctx.fillText('NYQUIST  L(jω) complex plane', 12*dpr, 16*dpr);
+    ctx.fillStyle='#5b6675'; ctx.textAlign='right';
+    ctx.fillText(M.status, w-12*dpr, 16*dpr);
+  }
+
+  // ---------- POLAR (optional overlay on nyq) ----------
+  function drawPolar(){
+    const c = document.getElementById('nyqCanvas');
+    const {w,h} = fit(c);
+    const ctx = c.getContext('2d');
+    const cx=w/2, cy=h/2;
+    const scale = Math.min(w,h)/2 * 0.82;
+    ctx.strokeStyle='rgba(245,166,35,0.5)'; ctx.lineWidth=1.5*dpr; ctx.setLineDash([4*dpr,4*dpr]);
+    ctx.beginPath();
+    for(let i=0;i<=120;i++){
+      const wv = Math.pow(10, -2 + (i/120)*4);
+      const L = openLoop(wv);
+      const xx=cx+L.re*scale, yy=cy-L.im*scale;
+      i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // ---------- readouts ----------
+  function updateReadouts(){
+    const M = computeMetrics();
+    document.getElementById('gmVal').textContent = isFinite(M.gm) ? fmt(M.gm,2) : '∞';
+    document.getElementById('gmVal').style.color = (M.gm<1) ? '#ff5d6c' : '#e8edf4';
+    document.getElementById('pmVal').textContent = fmt(M.pm,1)+'°';
+    document.getElementById('pmVal').style.color = (M.pm<10) ? '#ff5d6c' : (M.pm<30 ? '#f5a623' : '#4ade80');
+    document.getElementById('w0Val').textContent = fmt(M.w0,2);
+    document.getElementById('zetaVal').textContent = fmt(M.zeta,2);
+    document.getElementById('zetaVal').style.color = M.unstable ? '#ff5d6c' : (M.zeta<0.3 ? '#f5a623' : '#4ade80');
+
+    const badge = document.getElementById('statusBadge');
+    const dot = badge.querySelector('.dot');
+    document.getElementById('statusText').textContent = M.status;
+    badge.style.borderColor = M.color;
+    badge.style.color = M.color;
+    dot.style.background = M.color;
+    dot.style.boxShadow = '0 0 10px '+M.color;
+  }
+
+  // ---------- render ----------
+  function render(){
+    drawTime();
+    if(state.showBode) drawBode(); else { const c=document.getElementById('bodeCanvas'); const {w,h}=fit(c); c.getContext('2d').clearRect(0,0,w,h); }
+    if(state.showNyq){ drawNyq(); if(state.showPolar) drawPolar(); }
+    else { const c=document.getElementById('nyqCanvas'); const {w,h}=fit(c); c.getContext('2d').clearRect(0,0,w,h); }
+    updateReadouts();
+  }
+
+  // ---------- loop ----------
+  let raf=null;
+  function loop(){
+    if(state.running && !state.paused){
+      for(let i=0;i<SUBSTEPS;i++) stepSim();
+    }
+    render();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ---------- controls ----------
+  function setFill(el){
+    const min=+el.min, max=+el.max, v=+el.value;
+    el.style.setProperty('--fill', ((v-min)/(max-min)*100)+'%');
+  }
+  function syncDisplays(){
+    document.getElementById('integrators-display').textContent = state.integrators;
+    document.getElementById('gain-display').textContent = fmt(state.gain,2);
+    document.getElementById('tau-display').textContent = fmt(state.tau,2)+' s';
+    setFill(document.getElementById('integrators-slider'));
+    setFill(document.getElementById('gain-slider'));
+    setFill(document.getElementById('tau-slider'));
+  }
+
+  function updateButton(){
+    const b = document.getElementById('mainBtn');
+    if(!state.running){ b.textContent='▶ START'; }
+    else if(state.paused){ b.textContent='▶ RESUME'; }
+    else { b.textContent='⏸ PAUSE'; }
+  }
+
+  function start(){ state.running=true; state.paused=false; state.ended=false; updateButton(); }
+  function pause(){ state.paused=true; updateButton(); }
+  function reset(){
+    state.running=false; state.paused=false; state.ended=false;
+    resetSim(); updateButton(); render();
+  }
+  function step(){
+    if(!state.running){ state.running=true; state.paused=true; updateButton(); }
+    for(let i=0;i<SUBSTEPS;i++) stepSim();
+    render();
+  }
+
+  document.getElementById('mainBtn').addEventListener('click', ()=>{
+    if(!state.running) start();
+    else if(state.paused) pause===pause && (state.paused=false, updateButton());
+    else pause();
+  });
+  document.getElementById('resetBtn').addEventListener('click', reset);
+  document.getElementById('stepBtn').addEventListener('click', step);
+
+  // sliders
+  function bindSlider(id, key, isInt){
+    const el = document.getElementById(id);
+    el.addEventListener('input', ()=>{
+      state[key] = isInt ? parseInt(el.value,10) : parseFloat(el.value);
+      syncDisplays();
+      render();
+    });
+  }
+  bindSlider('integrators-slider','integrators',true);
+  bindSlider('gain-slider','gain',false);
+  bindSlider('tau-slider','tau',false);
+
+  // toggles
+  function bindToggle(id, key){
+    const el = document.getElementById(id);
+    el.addEventListener('click', ()=>{
+      state[key] = !state[key];
+      el.classList.toggle('on', state[key]);
+      el.setAttribute('aria-pressed', state[key]);
+      render();
+    });
+  }
+  bindToggle('toggleBode','showBode');
+  bindToggle('toggleNyq','showNyq');
+  bindToggle('togglePolar','showPolar');
+  bindToggle('toggleGrid','showGrid');
+
+  // presets
+  const presets = {
+    stable:{integrators:1,gain:1,tau:1},
+    marginal:{integrators:3,gain:1,tau:1},
+    oscillating:{integrators:3,gain:8,tau:1},
+    unstable:{integrators:4,gain:6,tau:1}
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const p = presets[btn.dataset.preset];
+      state.integrators=p.integrators; state.gain=p.gain; state.tau=p.tau;
+      document.getElementById('integrators-slider').value=p.integrators;
+      document.getElementById('gain-slider').value=p.gain;
+      document.getElementById('tau-slider').value=p.tau;
+      syncDisplays();
+      reset();
+      start();
+    });
+  });
+
+  // mobile collapse
+  document.getElementById('toggleControls').addEventListener('click', ()=>{
+    const c = document.getElementById('controls');
+    const hidden = c.classList.toggle('hidden');
+    document.getElementById('toggleControls').textContent = hidden ? 'Show' : 'Hide';
+  });
+
+  // keyboard
+  window.addEventListener('keydown', e=>{
+    if(e.target.tagName==='INPUT') return;
+    if(e.code==='Space'){ e.preventDefault(); document.getElementById('mainBtn').click(); }
+    else if(e.key==='r'||e.key==='R'){ reset(); }
+    else if(e.key==='s'||e.key==='S'){ step(); }
+  });
+
+  // resize
+  let rt;
+  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(render,80); });
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting) en.target.classList.add('in'); }),{threshold:0.1});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // ---------- postMessage listener (REQUIRED) ----------
+  window.addEventListener('message', function(event){
+    const { type, target, state:st, content } = event.data || {};
+    switch(type){
+      case 'SET_WIDGET_STATE':
+        if(st){
+          Object.entries(st).forEach(([key,value])=>{
+            const slider = document.getElementById(key+'-slider') || document.querySelector('[data-var="'+key+'"]');
+            if(slider){
+              slider.value = value;
+              if(key==='integrators') state.integrators=parseInt(value,10);
+              else if(key==='gain') state.gain=parseFloat(value);
+              else if(key==='tau') state.tau=parseFloat(value);
+              slider.dispatchEvent(new Event('input',{bubbles:true}));
+            }
+          });
+          syncDisplays(); reset(); start();
+        }
+        break;
+      case 'HIGHLIGHT_ELEMENT': {
+        const el = document.querySelector(target);
+        if(el){ el.style.outline='3px solid rgba(139,92,246,0.8)'; el.style.outlineOffset='4px';
+          el.style.animation='pulse-highlight 2s infinite';
+          setTimeout(()=>{ el.style.outline=''; el.style.animation=''; },3000); }
+        break;
+      }
+      case 'ANNOTATE_ELEMENT': {
+        const el = document.querySelector(target);
+        if(el && content){
+          const rect = el.getBoundingClientRect();
+          const tip = document.createElement('div');
+          tip.className='teacher-annotation';
+          tip.style.cssText='position:fixed; top:'+(rect.top-40)+'px; left:'+rect.left+'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s;';
+          tip.textContent=content; document.body.appendChild(tip);
+          setTimeout(()=>tip.remove(),4000);
+        }
+        break;
+      }
+      case 'REVEAL_ELEMENT': {
+        const el = document.querySelector(target);
+        if(el){ el.style.display=''; el.style.opacity='1'; }
+        break;
+      }
+    }
+  });
+
+  // ---------- init ----------
+  syncDisplays();
+  resetSim();
+  render();
+  loop();
+})();
+</script>
+
+<script>
+(function(){
+  try {
+    var out = {};
+    var c = document.getElementById("timeCanvas");
+    if (!c) throw new Error('no #' + "timeCanvas");
+    var btn = document.getElementById("mainBtn");
+    if (btn) btn.click();
+    if (!window.__loop) throw new Error('rAF callback never captured');
+    var t0 = performance.now();
+    for (var i = 1; i <= 2200; i++) window.__loop(false ? (t0 + i*16.7) : undefined);
+    var ctx = c.getContext('2d');
+    var w = c.width, h = c.height, dpr = Math.max(1, window.devicePixelRatio || 1);
+    var p = [46,14,30,26].map(function(v){ return v*dpr; });
+    var padL = p[0], padR = p[1], padT = p[2], padB = p[3], pw = w - padL - padR;
+    var img = ctx.getImageData(0, 0, w, h).data;
+    function hot(o){ return img[o+3] >= 100 && Math.max(img[o], img[o+1], img[o+2]) >= 80; }
+    function ink(x0, x1){
+      var n = 0;
+      for (var y = Math.round(padT); y < Math.round(h - padB); y++)
+        for (var x = Math.round(x0); x < Math.round(x1); x++)
+          if (hot((y*w + x) * 4)) n++;
+      return n;
+    }
+    var lm = -1;
+    outer:
+    for (var x = Math.round(padL); x < Math.round(w - padR); x++)
+      for (var y = Math.round(padT); y < Math.round(h - padB); y++)
+        if (hot((y*w + x) * 4)) { lm = x; break outer; }
+    out.canvas = c.width + 'x' + c.height;
+    out.dpr = dpr;
+    out.loopCalls = 2200;
+    out.leftBandInk = ink(padL, padL + 0.2*pw);
+    out.rightBandInk = ink(w - padR - 0.2*pw, w - padR);
+    out.leftmostInkPct = lm < 0 ? null : +(((lm - padL)/pw)*100).toFixed(1);
+    document.title = 'VERDICT ' + JSON.stringify(out);
+  } catch (e) { document.title = 'VERDICT ERROR ' + e.message; }
+})();
+</script>
+</body>
+</html>
