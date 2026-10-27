@@ -1,56 +1,487 @@
-# Nguyen et al. Ch5 — Fault Diagnosis Technologies
+# Nguyen et al. Ch5 — Diagnosis Methods (complete)
 
-The book's central diagnosis chapter: the FDI framework plus the full method zoo, all tied to engineering case studies (Navy chiller, helicopter gearboxes, motor drives, bearings).
+**Intelligent Fault Diagnosis and Prognosis for Engineering Systems** (Vachtsevanos, Lewis, Roemer, Hess, Wu; Wiley 2006). Full Ch5 distillation from the extraction, with worked examples' numbers intact; OCR formula failures flagged, nothing invented.
 
-## 5.2 The diagnostic framework
-- **FDI** = fault detection and identification; general structure: sensor data → feature extraction → fault classifier/decision → fault mode.
-- **Feature vector φ[x(t)] is a sufficient statistic** for the full state/history x(t) w.r.t. the fault condition z(t): P(z|φ) = P(z|x). The data-component g[x(t)] not needed for diagnosis can be dropped. Monitor φ continuously.
-- Online monitoring loop: data acquisition → preprocessing → feature extraction → classification → decision; alarm bounds as first-line detection.
-- Taxonomy: **model-based vs data-driven** diagnosis (Fig. 5.4) — the chapter's organizing split.
+## Nguyen Ch5 (5.1-5.7) — Fault Diagnosis Methods pt.1 (source lines 2535-3707)
 
-## 5.3 Historical-data methods
-- **OSA-CBM/MIMOSA** open-system standard for distributed CBM components; virtual data server for legacy data.
-- **Alarm bounds**: prespecified signal boundaries; computed from current signal (Bollinger bands) or from historical failure data.
-- **Statistical legacy classification**: correlation/regression on (x,z) pairs; **conditional expected value** E[z|x] = Σ zᵢ P(x|zᵢ)P(zᵢ)/Σ… — plug historical fault data directly into a Bayes-style estimator; clustering reveals structure in legacy data.
+### 5.1 Introduction (2535-2569)
+- Fault diagnosis is far better understood than prognosis; decades of work across medicine/engineering/business/finance. Goal: detect fault/anomaly, pinpoint/isolate faulty component, decide impact on system health.
+- U.S. Navy IDSS (integrated diagnostic support system): adaptive diagnostics, feedback analysis, fault precursors, some prognostics (Rosenberg 1989). ONR CBM program for Navy/USMC platform safety+affordability. Shipboard chiller CBM system successfully developed/tested (Hadden et al. 1999a,b) — sensor data from shipboard machinery, condition assessment, early fault detection + time-to-failure prediction.
+- OSA-CBM initiative: 7 levels — transducing → data acquisition → signal processing → condition monitoring → health assessment → prognosis → decision support/presentation (Fig 5.1). XML scheme proposed for networking. Decision-support level integrates prognostic info + external constraints + mission requirements + financial incentives into a "decision to act."
+- ISO 13374-1 processing model (Fig 5.2): data acquisition & analysis → health assessment → prognostic assessment → advisory generation.
+- Corporate R&D (GE, Boeing, Lockheed, Honeywell) domain-specific, not standard. Enabling technologies named: statistical distribution, Bayesian networks, stochastic ARMA models, state-estimation (line truncated mid-list in OCR [OCR?]).
+- Classic surveys: Willsky (1976), Isermann (1984).
+- Integrated CBM machine diagnosis architecture, 7 modules (numbered list):
+  1. sensor suite + sensing strategies
+  2. FMECA module — prioritizes failure modes by frequency × severity; catalogs effect–root-cause relationships
+  3. operating-mode identification — correlates fault-mode characteristics with operating conditions
+  4. feature extractor — condition indicators for diagnostic module
+  5. diagnostic module ("diagnostician") — online assessment of component state
+  6. prognostic module ("prognosticator") — remaining useful life estimate
+  7. maintenance scheduler — schedule without degrading overall system function
+- Prognosis deferred to Ch6; fault initiation/detection/propagation partly covered here (propagation relevant to prognosis).
 
-## 5.4 Data-driven classification and decision making
-- **Fault-pattern library**: table of parameter deviations indicating faults (e.g., motor magnetism loss → −10% on two features).
-- **Fuzzy pattern logic (FPL)**: IF (vibration is medium) THEN (condition is fault 2); membership functions (low/medium/high) with centers/endpoints from data; a reading can be both medium and high; rule firing degrees → fault probability ("60% chance of clogged oil filter at 235°F"). **No defuzzification needed** for diagnosis — belief degrees are the output.
-- **Dempster–Shafer evidential theory**: frame of discernment X = mutually exclusive fault modes; each feature = expert with basic probability number (BPA); belief Bel(A) = BPA(A) + subsets; **Dempster's rule of combination** merges independent evidence with conflict normalization 1/(1−Σ_{Ai∩Bj=∅} m1m2); expresses ignorance explicitly (belief 0 ≠ disbelief). Caveats: independence assumption, no theoretical justification for the combination rule itself.
-- Worked example: Navy centrifugal chiller — fuzzy features (evaporator temp/pressure) → D–S combination → certainty per fault mode.
-- **Neural networks** for classification (backprop MLPs on feature vectors).
+### 5.2 The Diagnostic Framework (2570-2651)
+#### 5.2.1 Definitions (converging military/industry usage; no community-wide standard vocabulary)
+- Fault diagnosis = detect+isolate+identify an impending/incipient failure — component still operational, degraded mode.
+- Failure diagnosis = detect+isolate+identify a component that has ceased to operate.
+- Fault detection: abnormal condition detected and reported. Isolation: which component is failing/failed. Identification: nature and extent of the fault.
+- Diagnosis objective: best performance = minimize false positives AND false negatives while reducing time delay between fault initiation and detection/isolation. Metrics in Ch7.
+#### 5.2.2 Requirements & performance metrics
+- System-level: maintainability+safety with reduced O&S cost; open systems architecture; control PHM weight; RAM-D (reliability, availability, maintainability, durability); monitoring/structural/cost/scalability/power/compat/environmental.
+- Specific (all x/y set by user, no accepted standards): detect ≥x% of monitored failures and ≥y% of failures identified via RCM+FMECA; isolation rate to one (or x) organizational removable assembly (ORA) units; false-alarm requirement as mean operating period between false alarms of x hours; BIT end-to-end test within x minutes; allowable false positives/negatives + time window between initiation and detection.
+- Algorithms must detect via physical-property changes; detected faults ⊂ FMECA set; must identify subsystem/component + failure mechanism + impact on operational integrity; detect/isolate as early as possible (feeds prognosis).
+- False-alarm reduction means: data validation; optimal feature selection/extraction; optimal detection/identification algorithm choice; evidence fusion (Dempster-Shafer); conflict resolution and ignorance representation; fusion of fault-classification algorithms; declare fault only when confidence (certainty) exceeds threshold.
+#### 5.2.3 Framework
+- FDI = fault detection + identification (determination of specific fault component/subsystem). General FDI structure (Fig 5.3): residual signal = deviation from standard operating conditions, generated by comparing model output vs actual system output; decisions made on residual. Residual generation: time-signal statistics, system identification, frequency-domain techniques.
+- Two enabling-technology categories (Fig 5.4): model-based (needs accurate dynamic model; can detect UNanticipated faults; residual/innovation between actual & model outputs; bank of filters can pinpoint fault identity) vs data-driven (only anticipated faults; "model" = neural nets/expert systems trained on known prototype fault patterns then deployed online).
+- Online monitoring & diagnosis scheme (Fig 5.5): sensor data collection → build feature vector with enough info for fault identification/classification → fault-classification block with decision algorithms. Feature-vector info from 3 means: (1) model-based (identify physical model parameters via Kalman filtering or RLS), (2) data-driven (vibration statistical moments, frequency-spectrum info), (3) statistical regression/clustering on historical legacy data. Probing signals may be injected back into the machine if more info needed (e.g., inject test vibration into machinery mount to test for loose fittings).
+- Fault-feature vector: mix of system parameters tied to fault conditions (bulk modulus, leakage coefficient, temperatures, pressures) + signal-analysis data (energy, kurtosis, DFT...). Components chosen via physical models and/or historical legacy data (USN SH-60 HIDS study, Hardman et al. 1999). Different subsystems need different feature vectors.
+- KEY PROBABILISTIC FOUNDATION: feature vector φ[x(t)] is a SUFFICIENT STATISTIC for full state/history x(t) w.r.t. fault/failure condition z(t): fault likelihood PDF decomposes (formula not decoded by OCR [OCR?]) such that knowledge of φ[x(t)] alone suffices to diagnose z(t); the data factor g[x(t)] depends only on x(t) and is NOT needed for diagnosis. φ[x(t)] monitored continuously, time-varying; classification by comparing to stored fault patterns or predetermined alarm conditions. φ carries symptoms; fault-pattern library (FPL) carries diagnostic info. FPL creation methods: physical modeling, statistical techniques, historical fault-test data, rule-based expert systems, reasoning systems, fuzzy logic, neural networks.
+- Notation: boldface = vector/matrix quantities throughout chapter.
 
-## 5.5 Dynamic systems modeling for diagnosis
-- **Kalman filter** full algorithm (time update increases covariance; measurement update with Kalman gain; Riccati-based implementations); gives states AND confidence bounds — bounds matter for prognosis.
-- **RLS parameter estimation** (special case of KF): estimate physical parameters (leakage coefficient, stiffness K, piston damping Bp) from measurable I/O; **parameter-deviation rules**: IF (K small AND Bp small) THEN (air in hydraulic system). Feature vector entries that can't be measured directly are estimated by RLS from the sensor suite.
-- System identification preamble: ARMA/ARMAX/ARIMA models, identification loop (experiment → hypothesize → fit → validate on unseen data).
+### 5.3 Historical Data Diagnostic Methods (2652-2813)
+- Motivating program: USN SH-60 Helicopter Integrated Diagnostic System (HIDS) — deliberately seeded faults on SB 2205 roller bearings (Engel et al. 2000; Hardman et al. 1999). Gear tooth weakened by electrical-discharge-machine notch at tooth root → localized stress concentration → crack grows → tooth failure. Collocated sensors: vibration at all gearboxes/shafting/hanger bearings, oil monitoring, in-flight rotor track & balance. Huge stored historical data; compare measured signals to stored failure data to indicate faults.
+- Historical data may include vibration measurements or moment info (energy, RMS, kurtosis) before/during failures. Challenge: data volume overwhelming → must convert to information. Methods: statistical correlation/regression, fuzzy-logic classification, NN clustering.
+- OSA-CBM/MIMOSA: open-system standard for distributed software components (public interface/function/behavior descriptions; not tied to hardware/OS/software tech). Core = object-oriented data model in UML; maps diagnosis/prognosis/data-transaction concepts. MIMOSA (Machinery Information Management Open Systems Alliance, mimosa.org) = data-exchange standard between asset-management systems (Fig 5.6 virtual OSA-CBM data server / repository architecture). Other standards: AI-ESTATE, IEEE 1451.2.
+#### 5.3.1 Alarm Bounds (2662-2676)
+- Alarm bounds / fault-tolerance limits = prespecified boundaries on sensor signals; signal or a moment passing outside bounds → alarm (Fig 5.7). Industrial tooling: LabVIEW Sound & Vibration Toolkit (NI) — measurement, logging, user-specified bounds, alarm functions.
+- Advanced decision making can use signal confidence bounds (e.g., Kalman filter error covariance). RUL prediction in Ch6.
+- Two ways to get bounds: (1) compute directly from current signal — e.g., Bollinger bands = moving average ± moving variance; exceedance suggests imminent significant trend change; advantage: automatic, no pretraining/historical data needed; (2) from historical data + past observed failure events.
+#### 5.3.2 Statistical Legacy Data Classification & Clustering (2678-2813)
+- Legacy fault data (Fig 5.8): each point (x,z) = one previously measured anomaly instance; e.g., vibration magnitude ↑ ↔ drive-tooth gear wear ↑. Fig 5.9: clustering reveals 3 fault-condition clusters. Figures 2-D but real historical data high-dimensional (vibration magnitude, kurtosis, spectrum content).
+- Correlation/regression: Pearson correlation (defined Ch3). Select feature-vector components significantly correlated with fault of interest; BOOTSTRAPPING gives confidence levels for correlations; MATLAB Statistics Toolbox (2002).
+- Parzen (kernel) estimator: consistent estimator of joint PDF from N samples x_i ∈ R^n with faults z_i (formula not decoded [OCR?]). Substitute into conditional expected value formula → E[z | observed data x] as kernel-weighted average (formulas not decoded [OCR?]). Works for non-Gaussian AND Gaussian data. Smoothing parameter σ chosen to trade diagnosis accuracy vs generalization to new data. More Parzen material in Ch6.
+- Fuzzy-logic classification of data: interactive computer-aided inspection (FLCT, Fig 5.10); yields rules "If (vibration magnitude is medium) then (condition is fault 2)" → go directly into diagnostic decision rule bases. MATLAB Fuzzy Logic Toolbox (2002).
+- NN classification/clustering (Haykin 1994; Lippmann 1987; Lewis et al. 1999): simplest NN one layer; complex two-three layers. Two-layer NN (Fig 5.11): two weight layers, input layer, hidden layer, output layer; nonlinear activation at each hidden/output neuron = source of power. Multi-input single-output two-layer NN equation (not decoded [OCR?]): weights v_ij, v_i0 (first layer), z_i, z_0 (second layer), n inputs, L hidden neurons; activations σ(·) can be hard limiters, sigmoids, tanh.
+- Universal-approximation caveat: two-layer NN approximates large class of practical functions BUT can only partition data into CONVEX decision regions (Fig 5.12); three-layer NN needed for general classification. Historically NN acceptance was hindered until the two-layer NN was shown to solve XOR (middle band of Fig 5.12). Wavelet neural network (WNN) introduced next section for high-frequency fault indicators (vibration emission sensors).
+- Example 5.1 NN classification of data (numbers exact): 8 measured points to classify into 4 groups: G1: (1,1),(1,2); G2: (2,-1),(2,-2); G3: (-1,2),(-2,1); G4: (-1,-1),(-2,-2). Encode groups as targets (0,0),(0,1),(1,0),(1,1). MATLAB: R=[-2 2;-2 2]; netp=newp(R,2) (2-neuron NN); trainParam.epochs=20 (20 epochs). Result Fig 5.14: two lines computed by NN divide the data into the four required groups. Deployment: new measured point P1=(1,-1) via Y1=sim(netp,P1) → classified as group 2 (a certain fault condition).
+- Example 5.2 Clustering with NN (numbers exact): 80 historical data points (Fig 5.15) → competitive NN with Kohonen training (Haykin 1994). MATLAB: P = 2×80 coordinate matrix; net=newc([0 1;0 1],8,.1) (8 cluster neurons, learning param .1); trainParam.epochs=7; weights w=net.IW{1} plotted as circles at cluster centers. Fig 5.16: NN identifies 8 clusters; author note: 6 cluster neurons probably a better choice for these data (number of clusters user-chosen). Deployment: new sensor point (0, 0.2) via p=[0;0.2]; a=sim(net,p) → assigned to fault cluster of neuron #1.
 
-## 5.6 Physical model-based methods
-- Physics of failure: corrosion-fatigue, stress-corrosion (K_ISCC thresholds, dithering effects).
-- **FEA in diagnosis**: ANSYS static analysis of cracked planetary carrier plate (UH-60 main transmission); physics-based vibration model of planetary gears (McFadden–Smith, refined Keller–Grabill) simulates spectral changes per crack length → diagnose crack size from features tied to design behavior.
+### 5.4 Data-Driven Fault Classification & Decision Making (2814-3153)
+#### Overview (2814-2833)
+- After feature vector measured/computed → fault-classification decision making (Fig 5.17): fault-pattern library (FPL) built from previously observed faults or expert info; compare fault-feature vector to stored anomalous patterns. Decision tools: rule-based, fuzzy-logic, Bayesian, Dempster-Shafer, NN. Alternative to FPL: multimodel & filter-bank methods — a separate model/filter per known fault condition.
+- Example 5.3 (data-driven decision system): data-driven = rely on process + PHM data (PHM sensors designed to respond to fault signals) to model relationship fault-features ↔ fault classes; "models" = expert systems / ANNs / combination. Need sufficient database (baseline AND fault conditions) for training+validation before online implementation. Tradeoffs: lack physics insight of model-based but need no accurate dynamic models; respond ONLY to anticipated, pre-prioritized (severity×frequency) faults; model-based can catch unanticipated faults via residual. Specialized NN/neurofuzzy constructs for idiosyncratic fault signatures in time/frequency/wavelet domains (Propes & Vachtsevanos 2003; Vachtsevanos & Wang 1998).
+- Classifier fusion + certainty factor: Dempster-Shafer evidential theory thresholding limits false alarms. Georgia Tech integrated architecture example (Zhang et al. 2002; Propes et al. 2002), Fig 5.18 modules: sensor data processing → operational mode identification → fault-feature extraction → diagnosis via MULTIPLE classifiers → confirmation via Dempster-Shafer certainty factor.
+- Why multiple classifiers: two sensor-evidence categories — (a) low-bandwidth process variables (temperature, pressure, flow): slow-developing failure modes, slow sampling OK; (b) high-bandwidth (vibrations, current spikes): e.g. bearing failure needs fast sampling to capture signature. Process measurements numerous and overlapping → conflict resolution/uncertainty challenges. Design implication: process faults → fuzzy-rule-base expert system; high-bandwidth faults → feature extractor + NN classifier topology.
+#### 5.4.1 Fault-Pattern Library (2834-2837)
+- FPL = rule-based table mapping observed conditions (feature vector) → fault-condition classes; antecedents = physical parameters, sensor data/moments, frequency content; consequents = fault condition.
+- TABLE 5.1 Fault-Pattern Library (verbatim rules):
+  - IF (leakage coeff. L is large) THEN (fault is hydraulic system leakage)
+  - IF (motor damping coeff. B is large) AND (piston damping coeff. B_p is large) THEN (fault is excess cylinder friction)
+  - IF (actuator stiffness K is small) AND (piston damping coeff. B_p is small) THEN (fault is air in hydraulic system)
+  - IF (base mount vibration energy is large) THEN (fault is unbalance)
+  - IF (shaft vibration second mode is large) AND (motor vibration RMS value is large) THEN (fault is gear tooth wear)
+  - IF (third harmonic of shaft speed is present) AND (kurtosis of load vibration is large) THEN (fault is worn outer ball bearing)
+- TABLE 5.2 Parameter Deviations Indicating Faults (Source: Skormin et al. 1994) — perturbations of physical-model params J, B, C, K, L, M_p, B_p (all ±10%):
+  - Hydraulic system leakage: J −10%, L +10%
+  - Control surface loss: M_p −10%
+  - Excessive hydraulic cylinder friction: B +10%, B_p +10%
+  - Rotor mechanical damage: B −10%, K −10%
+  - Motor magnetism loss: B −10%, C −10%
+  - Air in hydraulic system: K −10%, B_p −10%
+  - Rule of thumb in text: leakage coefficient ≥10% above nominal → fault condition exists.
+#### 5.4.2 Decision-Making Methods: Fuzzy-Logic (2838-2905)
+- Fuzzy logic (Kosko 1997; Ross 1995; Zadeh 1973) gives linguistic valuation of feature-vector entries ("large", "medium"...). FPL rules from fuzzy clustering: "If (vibration magnitude is medium), then (condition is fault 2)".
+- Fig 5.19 (Filippetti 2000): FPL rulebase diagnosing number of broken bars in motor drives (none/one/two; Incip.=incipient) from magnitudes of 1st & 2nd sideband components of vibration-signal FFT.
+- Fuzzy system (Fig 5.20) 3 components: (1) fuzzify sensed data into linguistic terms via prespecified membership functions; (2) look-up-table rule base (Table 5.1 style); (3) defuzzify consequents ("control representative values") into numbers via output membership functions. Numerical output formula NOT decoded by OCR [OCR?] (standard singleton-centroid product-inference form: y = Σ_i z_i Π_j μij(x_j) / Σ_i Π_j μij(x_j) — my reconstruction; text confirms x_j antecedents, z_i consequents, μij membership functions, product inferencing, centroid defuzzification).
+- CBM shortcut: full machinery NOT needed — defuzzification step skipped for FPL; only the rule consequents (fault conditions) matter.
+- Membership function center/end values from historical data, expert opinion, or physical modeling. Fig 5.21: "low/medium/high" bearing-temperature MFs.
+- Worked numbers: observed bearing temperature 235°F (Fig 5.22) has TWO linguistic values: high to degree 0.6 AND medium to degree 0.4. FPL rules: IF (Bearing Temp is medium) THEN (no fault); IF (Bearing Temp is high) THEN (fault is clogged oil filter) → conclusion phrased as "60 percent chance of clogged oil filter" given the 235°F reading.
+#### 5.4.3 Dempster-Shafer Evidential Theory (2906-2931)
+- Purpose: uncertainty management. Each input feature has membership functions giving possibility of fault mode; each feature treated as an "expert". Possibility values → basic probability assignments (BPA); Dempster's rule of combination assimilates evidence → degree of certainty (Shafer 1976). Generalization of probability theory, good with ambiguity + ignorance.
+- Formalism: X = frame of discernment = mutually exclusive & exhaustive set of fault modes; singletons = fault modes; P(X) = power set; any subset (incl. X, ∅, singletons) = hypothesis. Each evidence (sign/symptom) present or absent, with a BPA assigning basic probability numbers (BPN) m(A) to each hypothesis. BPNs ∈ [0,1] and SUM TO 1 over all hypotheses. If BPNs over all proper subsets sum to k, then m(X) = 1 − k. m(∅) = 0 by definition.
+- Bel(A) (lower probability) = m(A) + Σ BPNs of A's proper subsets. Bel ∈ [0,1]; 1=total belief, 0=LACK of belief (NOT disbelief). Distinction crucial: m(A) = belief committed EXACTLY to A; Bel(A) = total belief committed to A; m(A) ≤ Bel(A).
+- Disbelief in A = Bel(A^c). Plausibility PI(A) (upper probability) = 1 − Bel(A^c) = extent evidence does not support negation. Bel(A) ≤ PI(A); [Bel, PI] = belief interval — smaller interval = more conclusive evidence.
+- Dempster's rule (formula fragmented by OCR [OCR?]; standard form m12(A) = [Σ_{Ai∩Bj=A} m1(Ai)m2(Bj)] / (1 − K), K = Σ_{Ai∩Bj=∅} m1(Ai)m2(Bj) — text confirms: computed when Ai∩Bj ≠ ∅, m(∅) forced to 0, and the division by (1 − Σ-conflict-terms) is normalization to make BPNs sum to 1). Intuition: combination narrows hypothesis set by distributing belief into smaller subsets; resulting BPNs feed Bel(C), PI(C).
+- Advantages: expresses degrees of IGNORANCE — belief committed to subset does not force remaining belief onto complement: Bel(B) + Bel(B^c) ≤ 1 → disbelief distinguishable from lack of evidence; evidence relevant to subsets (not just singletons) captures "narrowing in" on diagnosis.
+- CAUTIONS: assumes evidence INDEPENDENT (not always reasonable); NO theoretical justification for the combination rule (Henkind & Harrison 1988).
+- Example 5.4 (Navy centrifugal chiller, fuzzy + D-S): fuzzy diagnostic system (Figs 5.23-5.24): 4 blocks = fuzzification, fuzzy inference engine, fuzzy rule base, defuzzification. Rule base from symptoms of potential failure mode; built from user experience, simulated models, or experimental data.
+  - Fault mode "refrigerant charge low": symptoms = low evaporator liquid temperature; low evaporator suction pressure; increasing difference between evaporator liquid temp and chilled water discharge temp (D-ELT-CWDT). Sensors: ELT, ESP, CWDT.
+  - Inference: fuzzy min-max aggregation of multiple rules (Fig 5.26: 1. fuzzy operation+implication; 2. aggregate max method; 3. defuzzify centroid method) → crisp output in [0,100] vs threshold for reporting.
+  - "Experts" = sensors + membership functions + fuzzy rule base. Sensor evidence (membership degrees): ELT: High 0.2, Medium 0.3, Low 0.5; ESP: High 0.1, Medium 0.2, Low 0.7.
+  - Mass function for rule "IF ELT low AND ESP low THEN refrigerant charge low": m({charge low}) = 0.62; m({NOT charge low}) = 0.14; m({charge low, NOT charge low} = uncertain/both) = 0.24.
+  - Degree of certainty: DOC = m({charge low}) − Belief({NOT charge low}) = 0.62 − 0.14 = 0.48; normalized into [0,1] → Belief measure = 0.73 (normalization expression not given explicitly [OCR?]).
+  - Fig 5.27: time evolution of DOC as evidence accumulates; designer sets threshold trading false-alarm reduction vs early declaration.
+  - Second fault "evaporator tubes freezing" (multiple-sensor fusion numbers exact): expert1 temperature: M({freezing}) = 0.5, M({not freezing}) = 0.3, M({both}) = 0.2; expert2 pressure: M({freezing}) = 0.2, M({not}) = 0.1, M({both}) = 0.7. Combined: M({freezing}) = 0.551, M({not}) = 0.292, M({both}) = 0.157. (My check: consistent with Dempster rule, conflict K = 0.5·0.1 + 0.3·0.2 = 0.11, denominator 0.89.)
+#### 5.4.4 Wavelet Neural Network (3046-3084)
+- WNN = classifier component for high-bandwidth data (vibration, acoustic); fuzzy classifier handles low-bandwidth (temperature, flow). Fault modes e.g. leakage, corrosion, crack.
+- Other successful classifiers named: polynomial NN (PNN), probabilistic NN, RBF NN, neurofuzzy constructs; COTS backprop routines (Ivakhnenko et al. 1993). PNN = network representation of R^n→R functions, nodes are low-order polynomials of few inputs; design = synthesize mapping from input/output database, choose structure (size/topology) + weights fitting data while preserving generalization; first PNN via group method of data handling GMDH (gmdh.net).
+- Wavelets: family of transforms with variable-width windows; resolve signal at various Heisenberg uncertainty-tradeoff (Δω·Δx) levels. WNN = universal approximator; wavelets' time-frequency localization → REDUCED networks at given performance level (Zhang & Benveniste 1992).
+- Expansion: ƒ(x) = Σ c_pq ψ_pq(x) (undecoded [OCR?]); coefficients c_pq = projections of F(x) on basis ψ_pq. Wavelet atoms: ψ_pq(x) from mother wavelet ψ, a_p = dilation parameter, b_p = translation parameter (exact formula undecoded [OCR?]; standard 1-D form ψ((x−b_p)/a_p)/√a_p — my reconstruction). Multidimensional OCR rendering "ψa,b(x) = ⁿ√a ψ(ax−b)" is garbled [OCR?] — true form carries a^(−1/2)... scaling per dimension. Fig 5.28 typical wavelets; Fig 5.29 "Mexican hat" multidimensional wavelet.
+- WNN structure/parameters (Fig 5.30): output of each node nonlinear in all inputs; net = expansion of nonlinear x→ƒ(x)/y in space spanned by node activation functions. Structure ID reduced to choosing NUMBER OF WAVELET NODES (inputs/outputs fixed by problem; internal topology fully connected). Training data clustered with K-MEANS in input-output product space; each cluster = potential WNN node. Parameters via LEVENBERG-MARQUARDT (Gill et al. 1981) = compromise between steepest descent and Newton methods; for fixed structure, training minimizes arithmetic-average squared modeling error. Fig 5.31: static WNN vs dynamic WNN — dynamic version used for fault PROGNOSIS (Ch6).
+- Classification paradigm Figs 5.32-5.34: train WNN offline, implement online (flowcharts given).
+#### 5.4.5 Wavelet Fuzzy Fault Classifier (3086-3088)
+- Wavelets as feature extractors ONLY, + classifier (fuzzy rule set or NN): exploits multiresolution, time↔frequency tradeoff — more frequency scales when fault info is primarily in frequency domain (Fig 5.35).
+- Info matrix with wavelet-expansion coefficients as elements; FUZZIFIED wavelet coefficients feed fuzzy inference engine; outputs = fault modes (Mufti & Vachtsevanos 1995).
+#### 5.4.6 Multimodel and Filter-Bank Fault Classification (3090-3153)
+- Fault-detection filter theory: estimated output from baseline model; filter residual = estimated − measured, constructed to have an INVARIANT DIRECTION in the presence of an element from a set of a priori faults → enables both detection and identification. Fig 5.36: failure-sensitive primary filter; ξ = information about detected failures.
+- Failure-sensitive filters: sensitive to NEW ABRUPT changes in data stream; wide failure applicability; most designs limited to TIME-INVARIANT systems. Classics: Beard-Jones detection filter (Jones 1973), Willsky's multiple-hypothesis filter design (Willsky 1976), Chen's jump-process formulation (Chen et al. 2001).
+- Innovations-based detection: handles wide range of actuator & sensor failures; isolates different failures using knowledge of individual effects; uses LINEARLY GROWING BANK of matched filters to compute best failure estimates → growing computational complexity.
+- Qualification factors:
+  - Isolability: ability to distinguish specific failure modes; tech = incidence matrices, deterministic (zero-threshold) and statistical (high-threshold) isolability.
+  - Sensitivity: qualitative, tied to failure size; depends on magnitudes of system-matrix elements, noise properties, time to failure; filtering improves sensitivity; no straightforward framework [caution].
+  - Robustness: isolation despite modeling errors; improved via algebraic cancellation desensitizing residuals to certain modeling errors.
+- Willsky's generalized likelihood ratio test (GLRT) example: dynamic model customized for specific failure (actuator or sensor). Dynamic JUMP and Dynamic STEP models with θ = unknown time of failure; sensor jump/step variants (all formulas not decoded [OCR?]). Innovations = no-failure innovation γ driven through failure signature matrix G (γ_f = γ + G·(failure term) — form undecoded [OCR?]). Chi-squared random variable formed from innovations (undecoded [OCR?]); failure declared when statistic crosses threshold (undecoded [OCR?]).
 
-## 5.7 Model-based reasoning (MBR)
-- Qualitative, AI-rooted: structural model (components + connections) + functional model (physical processes, qualitative representations); sensors link to functions monitored.
-- **Diagnostic trees with interval constraint propagation** (ternary algebra on intervals, not point values); multibranched trees generated by internal propagation; efficiency = expected number of measurements to isolate.
-- Worked examples: adder-multiplier circuit (Tong et al. ternary tree); **helicopter intermediate gearbox (IGB)** — vibration symptom taxonomy: rotor imbalance 1×, misalignment 2× + axial, looseness higher harmonics, bearing clearance subsynchronous whirl, race defect (n/2)× shaft speed (n balls), gear bevel defect at natural frequency with running-speed sidebands.
+### 5.5 Dynamic Systems Modeling (3154-3518)
+- ODE modeling (Lagrangian/Hamiltonian, PDE approximations, distributed models) → state-variable form → modern numerical signal/system processing toolkit.
+- Example 5.5 (Skormin et al. 1994) — electrohydraulic flight actuator (Fig 5.37): 8 fault modes: control surface loss; excessive bearing friction; hydraulic system leakage; air in hydraulic system; excessive cylinder friction; malfunction of pump control valve; rotor mechanical damage; motor magnetism loss.
+  - Physical modeling → subsystem transfer functions for: motor dynamics; pump/piston dynamics; actuator system dynamics (all formula blocks not decoded [OCR?]).
+  - Physical parameters: motor inertia J, motor damping B; piston mass M_p, piston damping B_p; hydraulic actuator area A, actuator stiffness K (specific numerics per actuator).
+  - Parameter→fault-mode mapping obtained by polling domain experts (operators, equipment manufacturers, flight technicians) or simulations. TABLE 5.3 (fault condition ↔ fault mode for actuator based on physical parameters): IF L large → hydraulic system leakage; IF B large AND B_p large → excess cylinder friction; IF K small AND B_p small → air in hydraulic system; Etc. (same subset as Table 5.1).
+  - Feature vector = the physical-parameter vector (explicit list in formula block not decoded [OCR?]; components per text: J, B, M_p, B_p, A, K — and L in the rulebase).
+  - Sensor selection: feature-vector entries are physical parameters that CANNOT be measured directly → recursive least squares (RLS) estimation. Ch6 covers ARMA/ARMAX/ARIMA system dynamic models + parameter identification.
+#### 5.5.1 Kalman Filter (3204-3305)
+- KF (Lewis 1986): estimates unknown states by combining current measurements with most recent state estimate; estimates possibly-unmeasurable quantities; for linear systems + Gaussian noise optimal = minimizes estimation-error covariance; noise knowledge → optimal Kalman gain; error covariance matrix = confidence bounds (vital for prognosis Ch6).
+- Discrete-time model: x_{k+1} = A_k x_k + B_k u_k + G_k w_k; z_k = H_k x_k + v_k (formula blocks undecoded [OCR?]; standard form reconstructed from context). u_k control input; w_k process noise (modeling errors, unknown disturbances e.g. wind gusts); v_k measurement noise; both white Gaussian, mutually independent and independent of unknown x_0; Q_k, R_k given with R_k ≻ 0 (OCR "〉0" [OCR?]).
+- x̂_k state estimate; error covariance P_k = E[(x_k − x̂_k)(x_k − x̂_k)^T].
+- Kalman Filter Algorithm (OCR scrambles symbols; standard reconstructed plain-text forms — consistent with visible fragments):
+  - Initialization: P_0, x̂_0 = initial estimate/covariance for unknown x_0.
+  - Time update (dynamics propagation): error covariance P_{k+1}^− = A_k P_k A_k^T + G_k Q_k G_k^T; estimate x̂_{k+1}^− = A_k x̂_k + B_k u_k.
+  - Measurement update at k+1 (info form): P_{k+1} = [(P_{k+1}^−)^{-1} + H_{k+1}^T R_{k+1}^{-1} H_{k+1}]^{-1}; x̂_{k+1} = x̂_{k+1}^− + P_{k+1} H_{k+1}^T R_{k+1}^{-1} (z_{k+1} − H_{k+1} x̂_{k+1}^−).
+  - Notation: (·)^− = predicted estimate/covariance BEFORE z_{k+1} used.
+- Timing insight (Fig 5.38): time update generally INCREASES covariance (process noise injects uncertainty); measurement update generally DECREASES it (measurement injects information). KF iteratively optimal at each step; smaller covariance = more accurate; covariance → confidence bounds.
+- Kalman gain K_k defined (formula undecoded [OCR?]) with second equality requiring derivation work; measurement update written via gain + innovation: predicted output ẑ_{k+1}^− = H_{k+1} x̂_{k+1}^−; estimate of measured output ẑ_k = H_k x̂_k; if predicted output equals actual z_{k+1}, state estimate unchanged (x̂_{k+1} = x̂_{k+1}^−).
+- Fig 5.39 KF diagram; stable implementations use Riccati-equation routines incl. square-root formulations (Lewis 1986).
+- Example 5.6 KF state estimation (numerics exact): actuator state-variable model given (matrices in undecoded formula blocks [OCR?]); process noise w_k = normal 2-vector, each component zero-mean variance 0.1 = normal(0,0.1); measurement noise v_k = normal(0,0.1). Unit-step test input u_k; output z_k measured (Fig 5.40); estimate both states x1,x2 from ONE output stream (Fig 5.41). MATLAB in Appendix. Fig 5.42(a) x1 vs x̂1, (b) x2 vs x̂2: estimates differ slightly due to unknown noise but agreement EXCELLENT — plots nearly on top of each other. Confidence bounds from P_k (Fig 5.43): x̂1 covariance smaller than x̂2 → estimate of x1(k) better than x2(k).
+#### 5.5.2 RLS Parameter Estimation (3307-3467)
+- RLS = special case of KF; for parameter identification when the dynamic model is NOT known.
+- SISO state-space → input-output form Y(z) = H(z)U(z); H(z) = numerator/denominator polynomials; denominator degree n, numerator degree m ≤ n, relative degree n−m = system delay d. ARMA difference-equation form (blocks undecoded [OCR?]; standard: y_k + a1 y_{k−1} + … + a_n y_{k−n} = b0 u_{k−d} + … + b_m u_{k−d−m}).
+- System identification vs state estimation CAUTION: identification finds unknown parameters a_i, b_i (equivalently unknown system matrices A, B, H) from u_k, y_k observations; KF state estimation REQUIRES known A, B, H and estimates x_k. Do not confuse.
+- Regression form: y_{k+1} = h_{k+1}^T θ (+ e_{k+1}), unknown parameter vector θ = [a_n…a_1, b_m…b_0]^T [OCR?], regression vector h_{k+1} built from PREVIOUS outputs and inputs. n+m+1 parameters → need n previous outputs and m+1 previous inputs.
+- RLS Algorithm (formulas not decoded [OCR?]; standard: θ̂_{k+1} = θ̂_k + P_{k+1} h_{k+1}(y_{k+1} − h_{k+1}^T θ̂_k); P_{k+1} = P_k − P_k h_{k+1}(h_{k+1}^T P_k h_{k+1} + R^{-1})^{−1} h_{k+1}^T P_k): P_k error covariance (entries indicate estimate accuracy — important in Ch6); θ̂_k parameter estimate at k. Covariance recursion called the Riccati equation (RE) (Eq 5.20 per text). Scalar output ⇒ h^T P h + R scalar ⇒ NO matrix inversions needed.
+- Initialization: θ̂_0 = 0, P_0 = γI, γ large positive (nothing known initially).
+- Must know system degree n and delay d to build h_{k+1}; various techniques exist to estimate these numbers.
+- Derivation: RLS = KF applied to the system θ_{k+1} = θ_k (constant-parameter state model) with output y = h^T θ [formula blocks undecoded]; equivalent Kalman-gain form θ̂_{k+1} = θ̂_k + K_k(...) [OCR?].
+- Slowly time-varying parameters (wear!): exponential data weighting — Q = 0 and time-varying measurement-noise covariance (exact expression undecoded [OCR?], standard λ-discount form) with R ≻ 0 so covariance decreases with time → recent measurements weighted more, old data exponentially discounted. Separate "RLS with Exponential Data Weighting" algorithm block (undecoded [OCR?]).
+- Persistent excitation (PE): u_k PE of order N if input-sequence information sum ≥ ρI (ρ>0) for some K (undecoded [OCR?]). n+m+1 ARMA parameters solvable iff u_k PE of order n+m+1. Spectral test: u_k PE of order N if its two-sided spectrum is nonzero at ≥N points. Worked facts: unit step = PE order 1; sine wave = PE order 2. If input not PE: inject small probing signal. To identify 6 parameters: probing signal needs ≥3 sine components at different frequencies (= 6 spectral points).
+- Example 5.7 RLS system identification: unknown 2nd-order system, delay d = 2; unknown parameters a1, a2, b0 (measured u_k, y_k in Fig 5.44). RLS MATLAB in Appendix; identified system then simulated with Fig 5.44a input → output identical to Fig 5.44b. (Identified parameter values printed inside undecoded formula block — not recoverable [OCR?].) Confidence bounds from P_k.
+- Example 5.8 (Skormin et al. 1994) — virtual sensors for the flight actuator: feature vector = physical params J, B, M_p, B_p, A, K (feature-vector formula undecoded [OCR?]); not directly measurable.
+  - Sensor placement: measure inputs/outputs of dynamic blocks. Motor block: armature current, pressure difference, motor speed (Fig 5.45); torque T(t) COMPUTED from armature current + pressure difference (input to motor transfer function).
+  - VIRTUAL SENSOR (VS, Fig 5.46): actual physical sensors + digital signal processing (DSP) → outputs the parameter features of interest.
+  - Continuous→discrete conversion (procedures in Lewis 1992): s· ↔ d/dt. Euler BACKWARD approximation: dw/dt ≈ (w_k − w_{k−1})/Δ [OCR: "≈ (w_k − w_{k−1})/Δ" implied; block undecoded]. Forward alternative: ẇ_k ≈ (w_{k+1} − w_k)/Δ replaces T_k by T_{k−1}. Sample period Δ must be AT LEAST FIVE TIMES SMALLER than the smallest system time constant (Δ ≤ τ_min/5).
+  - Result: difference equation = ARMA form with degree n = 1, delay d = 0. RLS input T_k (from measured armature current I_k and pressure difference P_k), measured output w_k (speed); RLS yields â1, b̂0; back out physical params by solving Eq (5.24) (undecoded [OCR?]). Then apply Table 5.3 rule base to declare fault.
+#### 5.5.3 Particle Filter Framework for Fault Detection/Diagnosis (3469-3517)
+- Particle filtering: emerging sequential signal-processing methodology (Arulampalam et al. 2002); founded on sequential importance sampling (SIS) + Bayesian theory. Ideal for NONLINEAR systems and/or NON-GAUSSIAN process/observation noise — engines, gas turbines, gearboxes (nonlinear, ambiguous rotating-machinery behavior under fault conditions). Fuses multiple measurement sources in a principled way (decisive for FDD).
+- Principle: approximate conditional state PDF (text prints p(z_k/x_k) for the state distribution — likely p(x_k|z_{1:k}) [OCR?]) with a swarm of PARTICLES (samples from unknown space) + weights = discrete probability masses. Needs: nonlinear process model, measurement model, measurements z_{1:k} = (z_1,…,z_k), initial state PDF p(x_0).
+- Two steps: PREDICTION = previous state estimate + process model → a priori state PDF for next instant (Doucet et al. 2001); FILTERING = current observation z_k + a priori PDF → a posteriori PDF via Bayes' formula (both equations undecoded [OCR?]). Distribution approximated by samples + normalized importance weights w̃; importance weights recursively updated (undecoded [OCR?]).
+- FDD implementation: nonlinear state model x_d(k) = collection of BOOLEAN states for operational condition (normal, fault type 1, 2, …); x_c(k) = continuous-valued states describing system evolution under a given operational condition; n(k) zero-mean I.I.D. white noise; w(k), v(k) NON-GAUSSIAN process/feature noise; f_k, h_k nonlinear mappings.
+- Output of the FDD module = percentage of particle population activating each Boolean state → recursively updated probability for any fault condition. Once probabilities established, any statistical test may define threshold for alarm / prognosis-module activation.
+- Worked application: turbine engine blade crack detection. Structural model precise for crack growth under nominal load: dynamics of L vs N where L = crack length (inches), N = number of stress cycles, P = random variable with known expectation, ƒ = FIFTH-ORDER polynomial known from a FRANC-3D model, ω(N) = I.I.D. white noise (growth equation undecoded [OCR?]). Measurement linear additive Gaussian: y(N) = L(N) + v(N). State equation nonlinear AND ω(N) nonnegative → non-Gaussian (why particle filter needed). Only raw data = time-of-arrival (TOA) per blade → preprocessing to build a detection feature (Fig 5.47). Feature + crack-growth model + feature↔crack-size nonlinear mapping run through particle filter to discriminate two Boolean states: no crack (normal) vs crack present (fault).
+- Detection results (Fig 5.48, one particular blade): probability-of-failure changes visible around the 200th cycle of operation, but evidence strong enough to ENSURE crack existence only after the 275th cycle.
 
-## 5.8 Case-based reasoning (CBR)
-- CBR cycle: retrieve → reuse → revise → retain. Case structure: condition, measurement, symptom, component/fault, action, success/failure, explanation.
-- Challenges: **coding** (case representation; relational DB as case base; semantic nets for symptom weighting) and **adaptation** (interpolation/extrapolation, CI tools to adapt a retrieved solution to the current case).
-- CBR shines where expert experience exists but models don't; compare with other technologies table.
+### 5.6 Physical Model-Based Methods (3519-3619)
+- Model-based diagnosis needs a good dynamic model: from physical modeling principles OR online parameter estimation/system ID; often combined.
+- Structural integrity (aircraft) is a hot CBM/PHM area: crack INITIATION and PROPAGATION models. Crack initiation models as diagnostic tools reviewed in Sehitoglu (1997). 3-D finite-element tools: ANSYS, FRANC-3D, FASTRAN (Newman 1992). Corrosion also targeted.
+#### 5.6.1 Fatigue and Crack Propagation Models (3533-3581)
+- Crack models must account for: load profiles, stress ratio, temperature variations, sustained-load hold time, damage-mechanism interactions (fatigue, environment, creep), cycle frequency; plus uncertainties in material properties/stress factors/environment → expressed as STOCHASTIC equations (PDFs, all parameters random). Parameter distributions via Monte Carlo simulation, probabilistic NNs, others.
+- Microstructure-level constitutive models (down to single-particle level, Friedman 1990) too computationally complex for real time → REDUCED-ORDER MODELS ("metamodels") derived from microstructural characterization for near-real-time crack initiation/propagation on conventional computers (Newman 1992). Crack initiation constitutive equations: Chestnut (1965) [text cites Chestnut 1965 here, Sehitoglu 1997 above — both cited].
+- Crack PROPAGATION models (prognosis-relevant): deterministic vs stochastic categories. Fatigue crack growth in bearings, gears, shafts, aircraft wings affected by stress states, material properties, temperature, lubrication, environment.
+- PARIS LAW (formula block undecoded [OCR?]; standard: da/dN = C0 (ΔK)^n — text defines): a [OCR "𝛂"] = instantaneous length of dominant crack; N = running cycles; C0, n = material-dependent constants; ΔK = range of stress-intensity factor over one loading cycle. Model parameters typically estimated by NONLINEAR RLS with FORGETTING FACTOR (Ljung 1999).
+- Stochastic crack growth: all parameters random → stochastic differential equation.
+- Example 5.9 corrosion initiation/propagation model (3555-3581):
+  - Motivation: military vehicles, sea vessels, aircraft, bridges, pipelines in corrosive environments → severe legacy-asset health + MRO cost impact (Fig 5.49 corrosion damage on aircraft structures). Corrosion-weakened material more susceptible to fatigue from even moderate cyclic stresses.
+  - Current corrosion-fatigue models (Kondo 1909? [OCR: 1989]; Goto & Nisitani 1992) CANNOT integrate new data from fiberoptic and other sensors at corrosion-susceptible locations → predictive models will improve when that info used directly.
+  - Physics-based predictive model must account for: structure/joint geometry; loading vs time; moisture level; chemistry incl. pH and chloride-ion (Cl−) concentration (maybe other metal ions); temperature; residual stress; material microstructure. Couple new corrosion-critical sensors with traditional accelerometers, strain gauges, flight data.
+  - Damage locations: surfaces, fastener holes, between layers of multilayer joints; small cracks from corrosion-assisted fatigue or fretting fatigue; cracks nucleate at corrosion-pit stress concentrations or via embrittlement altering local mechanical properties.
+  - Environment-dependent crack growth: environmentally assisted cracking (EAC) mechanism = hydrogen embrittlement at LOW Cl− concentration; electrochemical (anodic dissolution at grain boundaries) contributes/dominates at HIGH Cl−. EAC thermally activated → exponential Arrhenius relation. Worked number: raising temperature to 150°F increases stress-corrosion-cracking (SCC) rate in some aluminum alloys by AN ORDER OF MAGNITUDE vs room temperature (sunny-summer hot locations matter).
+  - Pillowing: entrapped corrosion products in lap joints change contact pressures between mating plates → accelerated fretting fatigue; fretting near fasteners/between layers destroys protective system → high-strength aluminum alloy more corrosion-susceptible → need multi-damage-module model algorithms (several damage mechanisms may operate).
+  - Fracture mechanics good at predicting growth once damage exists given estimated initial flaw size (EIFS); growth rate sensitive to crack-tip environment; simply using new sensor data improves prediction.
+  - Numbered reasons for accelerated propagation in corrosive environment: (1) EAC + small-amplitude ΔK (dithering effect), perhaps above K_ISCC; (2) EAC + periodic larger-amplitude ΔK ("conventional" corrosion-fatigue below K_ISCC); (3) increased thermal activation (room temp vs 150°F) shifting K_ISCC to the left and lowering stage-II crack-growth rate.
+  - Frequency matters: typical flight loads = high mean stress + high-frequency cycles + low-frequency pressurization cycles. Two-step tests (corrode then fatigue without corrosion) determine damage summation under variable loading/environments.
+  - Modeling gives platform for diagnostic AND prognostic reasoners; with measurements → assessment of current/future airframe status.
+#### 5.6.2 FEA Utility in Model-Based Diagnosis (3583-3619)
+- FEM: analyze complex systems by dividing into small discrete FINITE elements fully defined by geometry/properties (Moaveni 2003); each element a continuous structural member (Rao 1990); solve simultaneous reactions to loads (forces/fields/heat), constraints (motion/position/temperature), adjacent-element interactions via NODES; solution converges to total-structure behavior. History: Courant (1943) attributed introduction; Turner et al. (1956), Clough (1960); formal establishment Strang & Fix (1973).
+- FEA scope: single truss w/ point load → complete engine with moving parts. Discipline-specific fracture tools: FASTRAN (Newman 1992), FRANC-3D (Cornell Fracture Group 2003); general packages: ANSYS (DeSalvo & Gorman 1987), ABAQUS.
+- FEA FOR DIAGNOSIS principle: simulate how system condition changes when fault present; condition measured as variable value = "state estimate" or extracted as feature; ASSUMPTION: state/feature behaves similarly in FEA model and actual system.
+- From state/feature behavior one can diagnose presence + assess MAGNITUDE and DEVELOPMENT STAGE of the fault. Cross-condition comparison of FEA results → feature-selection table: which features best describe health under specific circumstances (e.g., one feature better at low-torque, another at high-torque engine operation); "better" = response sensitivity, noise immunity, statistical variance, etc. This = FEATURE SELECTION.
+- Example 5.10 UH-60A Blackhawk helicopter gearbox crack case study (Wu et al. 2004):
+  - Main transmission = planetary gear system; the PLANETARY CARRIER PLATE developed a crack in a high-stress region.
+  - Physics-based vibration model for planetary gears: McFadden & Smith (1985), refined by Keller & Grabill (2003); simulates expected vibration changes at different operating conditions/crack sizes (Fig 5.51: planetary transmission with FIVE planet gears).
+  - Model was for healthy system (no explicit crack parameter), but crack deforms plate → changes ANGULAR POSITION of planet gears (an important model parameter) → affects vibration.
+  - Pipeline: ANSYS static FEA computes plate deformation for specific crack lengths → new relative positions of the five planet gears → input to vibration model → simulated vibration signals representing characteristics as crack grows (Fig 5.52: (a) part design, (b) deformation under one operational loading instance with crack, shadings = strain ranges, (c) combined angular-position results for one planet from several simulations).
+  - Value: feature values tied to general design behavior extracted from simulated crack-length-specific vibration signals → diagnose specific crack lengths in similar systems.
+  - Enhancement: add DYNAMIC aspect of loads; FEA also enables prognosis studies (deferred to Ch6).
 
-## 5.9 Other methods
-- **Statistical change detection (SCD)** (Parker/Barron): quickest detection of subtle changes; applied to CH-47D transmission pinion tooth-bending fatigue from accelerometer data; early detection feeds prognosis.
-- State-based feature recognition and further methods summarized.
+### 5.7 Model-Based Reasoning (3621-3706)
+- MBR = higher-order reasoning: delineate TRUE cause of anomaly, its potential impact on healthy components, and fault-component identity. Uses qualitative notions and/or graphic dependencies → expedient but not strictly analytic solution for fault detection/propagation in interconnected systems. Most popular diagnostic MBR paradigm operates on STRUCTURAL + FUNCTIONAL description.
+- De Kleer & Williams (1987) constraint propagation: known (measured) terminal values propagated through given transfer functions to deduce other terminal values; each propagated value valid iff its components operational (dependency-tracking mechanism records this). Two INCONSISTENT values at a terminal → CONFLICT SET = union of the dependent component sets of each value; a conflict set means ≥1 component in it faulty. New measurements → new conflict/fault candidates derived from conflicts. Component appearing in ALL known conflict sets = SINGLE-FAULT CANDIDATE.
+- Diagnostic tree generation via internal propagation: constraint propagation applied to NUMERICAL INTERVALS not single numbers (worked mapping example: 2.65 maps into [1,4]). Algorithm: start from known system inputs, simulate expected output RANGE; assign qualitative value OK to ranges assumed normal; ranges above/below OK = HIGH / LOW. Tree: input one of three qualitative values at system output = branch from root node; other node = next measurement; choose one of three branches again, enter corresponding range → another propagation + next-measurement cycle. Component identified faulty → one path complete; iterate all paths from root → complete tree.
+- Example 5.11 diagnostic tree design (Tong et al. 1989): adder-multiplier circuit (Fig 5.53) = three analog multipliers M1, M2, M3 + two analog adders A1, A2. Ternary diagnostic tree (Fig 5.54): root + internal nodes = measurements; leaf nodes = failed components; EMPTY CIRCLES = multiple simultaneous faults; BLACK SQUARES = fault not detected or not isolatable. Worked path: terminal F measured LOW (BAD) and terminal X measured HIGH (BAD) → ternary tree correctly indicates a MULTIPLE fault (open circle).
+- Motivation: critical components are parts of larger subsystems (gearbox = shafts, bearings, gears...); frame-mounted accelerometers respond to vibrations from ANY component → must determine which component defective + how faults propagate faulty→healthy (the domino effect!) to avoid catastrophic failure.
+- MBR uses ALL system sensors to enhance/confirm fault isolation; intuitive multilevel modeling with inherent cross-checking (false-alarm mitigation) + multilevel correlation (accurate failure isolation).
+- Glossary: Model = executable declarative structure representing an objective (usually physical) system. Model-based reasoning = use of explicit models to aid intelligent reasoning (diagnosis, explanation, training). Structural model = what components present + how connected. Functional model = abstract model of fundamental physical processes; qualitative representation of real-world signals to reason about process interactions.
+- Generic functional model structure (Fig 5.55): chains of functions = functional flows; components link to functions they support; sensors link to functions they monitor; conditions/constraints link to functions they control.
+- Worked example: F35 Joint Strike Fighter fuel-supply system (Gandy & Line 2000): structural model Fig 5.56, functional model Fig 5.57.
+- MBR roots: AI, especially qualitative simulation (Shen & Leitch 1991, 2005; Fouche & Kuipers 1992; Davis 1984); De Kleer & Williams classic.
+- MBR efficiency metrics: efficiency = expected NUMBER OF MEASUREMENTS to isolate a fault; accuracy = minimum number of PATHS that cannot completely isolate the faulty component; detectable components should appear as LEAF nodes; resolving power = number of MULTIPLE faults that can be discriminated.
+- Example 5.12 helicopter intermediate gearbox (IGB) (3657-3694):
+  - IGB = pair of meshed spiral pinion gears, shafts supported at both ends by bearings; end of tail boom; redirects tail-rotor drive shaft up to tail rotor gearbox. H-60 (Blackhawk) IGB: schematic Fig 5.58, structural diagram Fig 5.59, functional diagram Fig 5.60.
+  - Fault modes: bearing inner/outer-race defect; shaft or pinion crack; gear tooth worn/chipped — each gives characteristic vibration signature; classify via accelerometer frequency bands.
+  - IGB fault-classification heuristics (verbatim): rotor imbalance → 1× shaft speed; shaft misalignment → 2× shaft speed + high axial vibration; mechanical looseness → higher harmonics of shaft speed; excessive bearing clearance → subsynchronous whirl instability; bearing race defect → (n/2)× shaft speed where n = number of balls; gear bevel defect → gear natural frequency with sidebands spaced at running speed of the bad gear.
+  - Fatigue-crack test: H-60 IGB pinion gear of 9310 STEEL, cyclic crack-growth test, seeded with EDM notches at and parallel to root of one gear tooth (Fig 5.61); spin-pit rotation at constant high speed with varying load cycle to simulate flight; data from two stud-mounted accelerometers at IGB input and output.
+  - Data: 36 sets of accelerometer readings (both input and output ends); features extracted in FREQUENCY and WAVELET domains; observed behavior vs functional-model PREDICTED behavior; discrepancy → fault detection; heuristics → fault classification (Fig 5.62 schematic).
+- MBR performance metrics recap (3696) + caution: qualitative simulation may produce SPURIOUS behaviors — must decide true faulty component among candidates. Pruning techniques: De Kleer & Williams approach; or STABILITY-based pruning via an energy-like/Lyapunov function whose time rate decides true fault behavior and rejects spurious responses (fits qualitative-reasoning framework).
+- Chapter-part-end closing comments on model-based failure detection (3706): (1) model design depends on application; detection filters analytically based, wide failure coverage, SUBOPTIMAL, mainly for TIME-INVARIANT systems; (2) multiple-hypotheses techniques = BEST performance with full implementation, great for abrupt changes, fell out of favor due to complex configuration (same for jump-process formulations); (3) innovations-based detection systems = wide range of procedures, performance↔complexity tradeoffs, and the MOST RELIABLE failure detection/isolation considering isolability, sensitivity, robustness.
+- END OF 5.7: final content at source line 3706 (blank 3707); "## 5.8 CASE-BASED REASONING (CBR)" starts at line 3708.
 
-## 5.10 Diagnostic framework for electrical/electronic systems
-- BIT-centric, test-point driven; end-to-end BIT test time requirement.
+## Nguyen Ch5 (5.8-5.11) — CBR, E/E framework, bearing case (source lines 3708-4255)
 
-## 5.11 Case study: vibration-based bearing diagnosis (engine bearings)
-- Engine bearing test rig (Allison T63 #2 bearing analog); seeded spall (Brinell mark on race); 12,000 rpm, 200 Hz loading; 200 kHz+ sampling; **high-frequency enveloping** extracts bearing fault frequencies; oil-debris (magnetic chip collector) as independent severity channel; Impact Energy FFT vs conventional FFT shows incipient response pre-spall.
+### 5.8 CASE-BASED REASONING (CBR) — part 1 (lines 3708-3847)
 
-## Practitioner takeaways (Ch5)
-- Choose the method family by what you have: legacy fault data → statistical/fuzzy/CBR; physics + sensors → KF/RLS/FEA; structure knowledge → MBR; all → fuse with Dempster–Shafer.
-- The feature vector is the contract between signal processing and diagnosis: design it as a sufficient statistic, then every classifier above plugs in.
-- Fuzzy rules give graded, explainable fault probabilities without defuzzification; D–S adds principled evidence fusion + explicit ignorance.
-- Vibration symptom frequency patterns (1×, 2×, harmonics, (n/2)×, sidebands) are a diagnostic lookup table for rotating machinery.
+**Core idea**: solve new problems by using/adapting solutions from old problems (Reisbeck & Schank [book says "Reisbeck and Shank"] 1989). CBR = human-like problem solving paradigm.
+
+**CBR cycle (Aamodt & Plaza 1994), the four RE's** (Fig 5.63):
+- **Retrieve** the most similar case(s)
+- **Reuse** the case(s) to attempt to solve the problem
+- **Revise** the proposed solution if necessary
+- **Retain** the new solution as part of a new case
+- Flow: new problem matched against case base → one or more similar cases retrieved → suggested solution reused & tested → unless close match, solution revised → produces new case that can be retained.
+- CAUTION: in practice this cycle rarely runs without human intervention; most CBR systems are mainly **case retrieval & reuse systems** (Watson & Marir 1994); revision (adaptation) often done manually by case-base managers. AI systems not fully autonomous yet but very successful as **decision-support systems**. Some applications use ML for data mining / learning associations within CBR to propose approximate solutions.
+
+**TABLE 5.4 CBR vs other technologies** (when to use / when NOT):
+- Databases: use = well-structured standardized data, simple precise queries; not = complex poorly structured data, fuzzy queries.
+- Information retrieval: use = large volumes of textual data; not = nontextual complex data types, when background knowledge available.
+- Statistics: use = large volumes of well-understood data, well-formed hypothesis; not = exploratory analysis with dependent variables.
+- Rule-based systems: use = well-understood, stable, narrow problem area, justification by rule trace acceptable; not = poorly understood area that constantly changes.
+- Machine learning: use = generalized rules needed from large training set, rule-trace justification OK; not = rules not required, rule-trace justification unacceptable.
+- Neural networks: use = noisy numerical data for pattern recognition / signal processing; not = complex symbolic data or when justification required.
+- **CBR: use = poorly understood problem area, complex structured data changing slowly over time, justification required; NOT when case data unavailable, complex adaptation required, or an exact optimal answer is required.**
+
+**Induction** as logical foundation: building case history, identifying patterns among cases, ordering decision criteria by discriminatory power, partitioning cases into families → efficient search + knowledge extraction from old cases. Fig 5.64 = ordered induction process as decision-support tool.
+- Entry points in induction scheme for equipment reliability/maintainability: **failure symptoms** (abnormal noise, vibrations, thrust deficiency, high oil consumption...). **Target slots**: faulty equipment (failed component / replacement part). **Information extraction module**: extracts symptom-specific technical failures.
+- CBR for prognosis & health management (PHM) builds on induction + extra modules for coding, adaptation, PHM-specific functions (Fig 5.65).
+
+**Two major design challenges**: (1) coding of cases for storage; (2) adaptation — reasoning about new cases to maximize chance of success while minimizing uncertainty about outcomes/actions. Secondary issues: what info to code, DB type, programming language.
+
+**Challenge 1: Coding.**
+- Must hit desired abstraction level AND describe specific situations; handle both quantitative and qualitative info dual mode ("temperature exceeding 100°F" vs "vibration levels are very high").
+- Minimal case fields (7):
+  - **Condition**: existing conditions when case logged
+  - **Measurement**: qualitative & quantitative measurements or features
+  - **Symptom** (optional): other unusual observations, may be all textual
+  - **Component**: component affected + corresponding fault
+  - **Action**: actions/decisions taken in the past
+  - **Result**: success/failures of preceding actions
+  - **Explanation**: why a particular decision was taken
+- **RDBMS advantages for CBR**: (1) organizes large data in linked tables → case base easy to understand; (2) relationally complete language for data definition/retrieval/update; (3) data integrity rules defining consistent DB states → data reliability. (Figs 5.66-5.68: relational DB example, simple case structure, case-as-element-of-case-base.)
+
+**Challenge 2: Adaptation.** Returned case often not exact solution → adapted solution generated in solution space matching input problem description as closely as possible (Fig 5.69).
+- Conventional adaptation methods: **interpolation and extrapolation**; also learning algorithms & CI tools (fuzzy inferencing, neural networks).
+- **Learning adaptation algorithm**: compares similar attributes; find two data items differing in exactly ONE attribute; solution difference = value of change in that attribute. Advantage: no need to add, retrain, or re-induce new rules.
+- Fig 5.70: detailed CBR architecture w/ indexing, similarity metrics, adaptation rules + interdependencies.
+
+**Example 5.13: Dynamic CBR (DCBR)** — circumvents conventional difficulties; extends case base, stored fault cases, reasoning algorithms via **continuous evolution over time** of existing cases as more similar ones encountered; emphasizes case attributes contributing most significantly to correct solution.
+- Key idea: store a **statistic** per field in a SINGLE representative case instead of many similar cases. Each problem case: either grouped with an old case by similarity → update the **statistic vector** of the representative case; or detected as new → case library updated by including it.
+- Figs 5.71-5.74: DCBR engine schematic; DCBR salient features (Fig 5.72); dynamic case; inferencing mechanism (solution suggested by best match with retrieved cases).
+- **Fig 5.72 high-level DCBR scheme (7 steps)**:
+  - Detect abnormal behavior possibly indicating failure mode(s)
+  - Use classic fault diagnostic methods for detection + DCBR statistic vector for fault identification
+  - Compare with past cases (statistic vector) to narrow down possible failure modes (Retrieval)
+  - Perform specific diagnostics (classic methods) for suspected failure to improve confidence limits on detection
+  - Categorize problem case into a new fault case or old fault case similar to old case(s)
+  - Use adaptation mechanisms to aggregate appropriate solution scheme from solutions of retrieved cases
+  - After solution applied: feedback operation → (a) modify diagnosis & hence proposed solution, reapply (Feedback control); (b) register success/failure of solution (Bookkeeping for future reference)
+- Effectiveness enhancers:
+  - Retrieval more precise via statistical/probabilistic case selection (Bayesian or belief networks, clustering algorithms)
+  - Multiple similarity metrics w/ aggregate ranking (k-nearest-neighbor, weighted feature distance) to improve confidence in case rankings
+  - Adaptation scheme selected from multiple schemes based on info coded in retrieved cases (fuzzy max-min composition, Dempster-Shafer-based aggregation, belief networks)
+  - Reasoning on qualitative-only, quantitative-only, or both — dynamically determined per problem case
+
+#### 5.8 continued — semantic nets, similarity, case structure (lines 3848-3907)
+
+**Textual hypothesis handling**: textual descriptions represented as a **minimized language** (set structure + rules, unlike full natural language). Typical rule set:
+- Passive-voice sentences not allowed
+- Compound sentences joined by conjunctions not allowed
+- Fixed vocabulary
+- Ambiguity resolved by fixed domain (e.g., mechanical systems)
+- Semantic network built from textual fault symptoms: **three relations IN, AT, IS**; sentences decomposed into basis units called **triads** (Fig 5.76).
+- NLP step: part-of-speech tagging via **Tree Tagger** program → 3-column output: original word, tag abbreviation, word stem (Fig 5.77).
+
+**TABLE 5.5 — the three relations** (capture most relevant aspects of hypothesized scenarios):
+- **A-IN-B** → "A in condition B" / "A when B". A = noun or triad, B mostly triad. Ex: "Transmission fluid has burnt smell" → (Transmission fluid)-IN-(smell-IS-burn)
+- **A-IS-B** → "A has property B" / "A is type B". A = noun or triad, B = adjective. (Same example sentence uses IS inside the nested triad.)
+- **A-AT-B** → "A in state B" / "A exhibits state B". A = noun or triad, B = verb. Ex: "Transmission slips" → (Transmission)-AT-(slip)
+
+**Similarity assessment = matching triads in semantic networks**, smallest-level triads first.
+- Ex: input net (Transmission-IS-Noisy)-IN-(Gear-IS-Neutral) = 3 triads: T1=(Transmission-IS-Noisy), T2=(Gear-IS-Neutral), T3=(T1-IN-T2).
+- Retrieval: first fetch all semantic nets containing similar type-I triads (T1 or T2). Triad similarity computed by how closely the three constituents match (2 participants + link).
+- **Weights**: for triads with link **AT or IS**: P1=0.5, P2=0.3, L1(link)=0.2 — component (P1) matching matters more than exact condition for fault **localization** (identification handled by other diagnostic algorithms; identification may need more accurate condition matching).
+- For triads with link **IN**: P1=0.4, P2=0.4, L1=0.2 — both participants equally informative.
+- **TABLE 5.6 similarity example**:
+  - (Transmission-IS-Noisy) vs (Transmission-AT-No Drive): SimVal = 1×0.5 + 0×0.2 + 0×0.3 = **0.5** (P1 match only)
+  - (Gear-IS-Neutral) vs (Gear-IS-Neutral): 1×0.5 + 1×0.2 + 1×0.3 = **1.0** (full match)
+  - Composite IN triad vs composite: 0.5×0.4 + 1×0.4 + 1×0.4 = **0.8** (P1 partial, P2 and link full)
+
+**DCBR implementation example** (Fig 5.78 = DCBR architecture schematic). Sensors/features/diagnoses lists compiled from domain experts + web + textbooks + prior experience (Tables 5.9, 5.10, Fig 5.79).
+
+**TABLE 5.7 case structure (hierarchical)** [OCR heavy: header garbled "Case Structure . - .ID" ≈ Case_ID]:
+- .ID = Case_ID
+- .Component = Component_Name; .Location = Component_Location
+- .Symptom: S_ID, Symptom, Weight, **Semantic_net** [OCR "Sementic_net"], Hypotheses — ex rows: s1 Ws1 SemNet1 → h1,h2; s2 Ws2 SemNet2 → h1; s3 Ws3 SemNet3 → h2
+- .Hypothesis: H_ID, Hypothesis, Weight, Diagnosis — h1 W_h1 → d1; h2 W_h2 → d2,d3
+- .Diagnosis: D_ID, **(Sensor,Feature) pairs**, Weight, Solution — d1:{(S1,F1),(S1,F2),(S3,F1),(S4,F6)} Wd1 → r1; d2:{(S1,F2),(S1,F3)} Wd2 → r2; d3:{(S5,F1)} Wd3 → r3
+- .Repair: R_ID, Repair, Weight — r1 Wr1, r2 Wr2, r3 Wr3
+- .Version: Last_Update (mm:dd:yy), **Case_Quality (weight) W**, Success **nS**, Failure **nF**, Conditions C1,C2,C3
+
+**TABLE 5.8 case example (transmission bearing, Case_ID 10, Component=Bearing, Location=Main_Transmission)** [OCR mangled but values recoverable]:
+- Symptoms: s1 "Noisy in neutral with engine running" w=0.57 SemNet1 → h1,h2,h3(?); s2 "Vibration" w=0.43 SemNet2 → h1,h2,h4 [hypothesis lists garbled; keep with caution]
+- Hypotheses: h1 "Primary Gear worn" w=0.65 → d1; h2 "Primary Bearing worn" w=0.15 → d2,d4; h3 "Clutch Release Bearing worn" w=0.10 → d3,d4; h4 "Lack of oil" w=0.10 → d5
+- Diagnoses (D_ID 1-5): d1 {(S3,F1),(S3,F4)} w=0.75 → r1,r3; d2 {(S1,F15),(S1,F8)} w=0.80 → r2,r3; d3 {(S2,F15),(S2,F8)} w=0.80 → r3; d4 [(row mislabeled "d3" in OCR] {(S1,F13),(S4,F13)} w=0.6 → r3; d5 {(S13,F17)} [OCR S13 suspicious — sensor list only goes to S14; keep] w=0.6 → r3
+- Repairs: r1 "Change Primary Gear" w=0.25; r2 "Change Primary Bearing" w=0.25; r3 "Replenish oil" w=0.25; r4 "Change Clutch Release Bearing" w=0.25
+- Version: Last_Update 03:16:05; Case_Quality 0.8; Success nS=8; Failure nF=2; Conditions: Full Load, Windy
+
+**CBR wrap-up assessment**:
+- Several CBR systems fielded for fault diagnosis / CBM / PHM; advances needed to exploit full capability.
+- Primary objective in CBM/PHM: not just store cases + best match, but provide a **confidence level** for suggested solutions — based on number of matching cases + similarity among matching cases; confidence derived via aggregate of several similarity metrics.
+- **Advantages**: reduced knowledge-acquisition task; flexible knowledge modeling; reasoning in poorly understood/defined/modeled domains; learning over time; explanation module; uses both qualitative (textual) and quantitative (measurement) info.
+- **Disadvantages**: large processing time to find similar cases; large storage space; optimal solution NOT guaranteed; "among others".
+
+**TABLE 5.9 sensors look-up (DCBR example)**: S1-S6 = accelerometers ("PortRing ACC1", "StbdRing ACC1", "Input1 ACC1", PortRing ACC2, StbdRing ACC2, Input1 ACC2), described as Accelerometer (100 MHz) [OCR? sampling rate implausible, keep verbatim]; S7-S9 = acoustic emission x/y/z (AEx horizontal, AEy vertical [OCR "verticle"], AEz axial); S10 not listed [OCR gap]; S11,S12 = temperature (thermocouple TC1/TC2); S13,S14 = oil pressure P1/P2 in gearbox 1/2.
+**TABLE 5.10 features look-up (garbled OCR; reconstruct cautiously)**: feature names include Half_Shift_Order (amplitude of 1/2 × fundamental shaft freq; excellent gear-mesh anomaly indicator), First_Shift_Order (fundamental shaft freq; excellent shaft imbalance indicator), Second_Shift_Order (2× fundamental; excellent misalignment, good backup to F2), Residual_RMS (RMS of residual; good late-responding gear fault indicator), Residual_Kurtosis, Energy_Operator (energy of sidebands / localized anomalies of residual), Shift_Kurtosis, Sideband_Modulation, Inner_Race_Energy / Outer_Race_Energy / Roller_Energy / Cage_Energy (total energy of enveloped vibration signal assoc. with inner-race/outer-race/roller/cage of specific bearing), Roller_Cage_Interaction_Energy (energy of enveloped signal from roller-cage interaction), Tone_Energy (energy of predominant tones), Base_Energy (energy after removing predominant tones). F_IDs F1-F15+: F1 Half-Shift, F2 First-Shift, F3 Second-Shift, F4 Residual RMS, F5 Residual Kurtosis, F6 Energy Operator, F7 Shift Kurtosis, F8 Sideband Modulation, F9 Inner-Race Energy, F11 Outer-Race Energy, F12 Roller Energy, F13 Cage Energy, F14 Roller-Cage Interaction Energy, F15 Tone Energy [mapping partly inferred from column order — flag as OCR-uncertain].
+- Fig 5.79 "Fault symptoms and corresponding diagnosis — module: automatic transmission": maintenance-style symptom guides (fluid leakage: ATF usually deep red; don't confuse with engine oil blown onto transmission; degrease/steam-clean to find leak source; brown/burned-smelling fluid → low level or needs renewal; general gear-selection problems → check/adjust selector cable).
+
+### 5.9 OTHER METHODS FOR FAULT DIAGNOSIS (lines 3908-4071)
+
+Intro: survey of other diagnostic methods from the years; each addresses a particular requirement; all present unique advantages for CBM/PHM designers.
+
+#### 5.9.1 Statistical Change Detection (SCD) (lines 3912-3950)
+- Origin: **B. Eugene Parker et al., Barron Associates, Inc. (2000)**; early detection of subtle system changes. Detects when a model describing initial behavior of a time series stops describing it accurately. Online AND offline.
+- Formal setting: sequence of random observations; until unknown time **t_p** measurements generated by statistical model **M_p**; thereafter by model **M_i**.
+- **Online SCD goal**: detect change M_p→M_i **as quickly as possible** after occurrence = minimize detection delay subject to given **mean time between false alarms**.
+- **Offline SCD goal**: detect change M_p→M_i with minimum sensitivity = **maximize power of the test** subject to constraint of **fixed false-alarm probability**.
+- Emphasis for diagnostics: "quickest detection". Early detection can benefit RUL prognosis (time for prediction + corrective action when failing component endangers operational integrity).
+- SCD exploits the **bispectral domain**, avoiding spectral-domain challenges like low SNR at characteristic defect frequencies. Higher-order spectra sensitive to **non-Gaussian** vibration signatures only; **third- and higher-order cumulants vanish for Gaussian processes** → enhances SNR for fault signatures. Failure modes involve **sets of phase-coupled harmonics and sidebands** (cumulants sensitive to phase coupling among frequencies).
+- Barron Associates used **time-local bispectrum** and **magnitude-squared bicoherence** as higher-order statistics for fault detection.
+- Application: accelerometer data from a **CH47D helicopter combiner transmission spiral bevel input pinion gear** with classic **tooth-bending fatigue failure** from test-cell overloading. SCD detected the fault at the **same time** as special-purpose **Steward Hughes, Ltd. Mechanical Systems Diagnostic Analysis (MSDA)** [OCR "specialpurpose Steward Hughes"].
+
+#### 5.9.2 State-Based Feature Recognition (lines 3952-3954+)
+- **George D. Hadden & colleagues, Honeywell International (Hadden et al., 1994)**: state-based feature-recognition software technique using **temporally correlated features from multiple data streams** for anomaly detection and diagnosis.
+- Features detected via software structures = **finite state machines (state machines)**. NOTE: text continues "Unique advantages of this approach are" — advantages enumerated in next chunk.
+
+#### 5.9.2 continued + auto-transmission symptom appendix (lines 3988-4022)
+- (Fig 5.79 appendix, maintenance-manual-style content: poorly adjusted selector cable can cause: engine starting in gears other than park/neutral; selector-lever indicator disagreeing with actual gear; vehicle moves in park/neutral; poor shift quality or erratic gear changes. No downshift with pedal floored → low fluid level / incorrect cable adjustment. Engine starts only in park/neutral → starter/inhibitor switch or selector cable adjustment. Slipping/rough/noisy/no-drive → check fluid level & condition, change fluid+filter.)
+- **State-machine advantages** (bullets, order scrambled by OCR but content intact):
+  - Hierarchical pattern recognition can be built on recognition of simpler patterns
+  - Small: **100 to 300 bytes per individual state machine**
+  - Dynamically downloadable sensors can take a "closer look"
+  - Parallelizable state machines operate independently yet can use output from each other
+- Failure modes modeled as state machines: structure simulates **state register, local and global variables, time stamps**; **transition list** = state-to-state transitions, conditions, actions (Fig 5.80 general state machine).
+- Honeywell applied state-based feature recognition to **engine and chiller fault diagnosis** (Hadden & Nelson 1991, 1994).
+
+#### 5.9.3 Bayesian Networks (lines 4024-4044)
+- Aliases: belief networks, knowledge maps, probabilistic causal networks; model **multifault, multisymptom dependency relations** (Jensen 2001). Use when causality matters but cause-effect understanding incomplete.
+- Foundation: Bayes' theorem — **posterior conditional = (likelihood × prior) / evidence** [formula itself is <!-- formula-not-decoded --> in OCR].
+- Chain rules needed for multiple variables. **Curse of dimensionality**: joint distributions grow exponentially — for n binary RVs need **2^n − 1** joint distributions.
+- Formal BN definition: **directed acyclic graph**, nodes = random variables (causes, effects, evidence); arcs = dependence assumptions. Design: specify variable dependences, **prior probabilities of root nodes**, **conditional probabilities of nonroot nodes given only their direct predecessors**.
+- Worked example (Fig 5.81): A causes B and C; C and D cause E. Required quantities: P(A), P(D), P(B|A), P(C|A), P(E|D,C). Binary vars: direct joint needs 2^5 − 1 = **31** distributions vs BN needs only **5**.
+- Properties: (1) if specified distributions consistent, all calculated probabilities consistent; (2) network always uniquely defines the joint distribution.
+- **Inference is NP-hard** in general. Exact solutions only for **singly connected networks**; for multiply connected: convert to singly connected by **clustering**, or use **approximate methods** (randomly position values for some nodes then pick values for others; or keep statistics on node values and answer from statistics — i.e., stochastic simulation).
+- Superiority for diagnosis = **likelihood principle**: inferences depend on probabilities of data actually received, NOT data that might have occurred (contrast with classic statistical inference). Probabilistic reasoning is the only viable alternative when one symptom can have several faults and fault-symptom relations are nondeterministic / poorly understood.
+
+#### 5.9.4 Mechanical Face Seal & Drive Shaft Fault Diagnosis (lines 4046-4050)
+- **Itzhak Green et al.** (Zou & Green 1997; Zou et al. 2000): diagnose face-seal and drive-shaft faults using **eddy-current proximity sensors + xy orbit plots** (eddy-current intro: Chap 3 Sec 3.2.4 [OCR "3.24"]).
+- Eddy-current sensors observe **relative shaft motion** directly, e.g., inside clearance of fluid-film bearings; standard equipment on high-speed turbomachinery.
+- Scale contrast: shaft monitoring deflections = **fractions of millimeters**; seal monitoring clearances = **submillimeters**.
+- **xy (angular) orbit plots** from **three** eddy-current probes detect seal absolute/relative misalignment. Noncontacting vs contacting seal plots (Figs 5.82/5.83) are **distinctly different** → clearly identifiable; features derivable in time, frequency, and orbit domains incl. tilt orbit plot for contacting behavior.
+- Key discrimination: **cracked shaft = dominant second-order harmonic** vs **seal in contact = higher harmonic oscillations** → **multifaults (dual fault) detectable with one monitoring system** → maximizes ROI. Theory + experiment agree well.
+
+#### 5.9.5 Hidden Markov Models (lines 4052-4070)
+- Studied since late 1960s–early 1970s; tutorial = **Rabiner (1989)**. Problem: characterizing signals via signal models; system in one of several distinct states at any time; typical **5-state Markov chain** shown Fig 5.84.
+- At regularly spaced discrete times system changes state (possibly normal→faulty) per state-associated probabilities **estimated from actual measurements**.
+- Good for **quasi-stationary signals** like vibration monitoring; fault detection + estimation (Bunks et al. 2000).
+- Two main components: (1) **state-transition matrix** — probabilistic move from one stationary behavior type to another; (2) **probability distribution per state** — statistics of that stationary model.
+- Applied to **Westland helicopter gearbox** data for fault detection & isolation (Bunks et al. 2000). Preconditions: enough data to estimate pdf parameters per state (load level, fault mode...), a-priori evidence on fault-mode frequency of occurrence + average time at each load level. CAUTION: challenges remain — suitable data sets, HMM training, quasi-stationarity assumption.
+
+### 5.10 A DIAGNOSTIC FRAMEWORK FOR ELECTRICAL/ELECTRONIC SYSTEMS (lines 4072-4122)
+
+**Motivation**: growing need to detect/isolate/predict time-to-failure for avionics, weapon systems, automotive, computing platforms etc. Electromechanical PHM maturity high; **predominantly electronic components lag behind**. **Built-in testing (BIT)** widely used on aircraft/critical assets but **notorious for large numbers of false alarms**.
+
+**Bathtub curve critique** (Fig 5.85, courtesy Ridgetop Group 2004):
+- Designers assume constant failure rates / lab-test MTBF. Classic view: low constant rate after **infant mortality**, then **increasing linear growth of failures in an "end of life" region**; useful life ends where growth begins.
+- That's still too simplistic: electronics are **NOT "memoryless"**. Elements (solder joints, wires, PCBs) **accumulate damage at environment/operation-dependent rates** → useful life = f(environmental history, design tolerances, material properties, operational conditions).
+- **Failure-accelerating parameters**: temperature & humidity; temperature variation; vibrations; shock; power quality; extreme operating conditions.
+
+**Sensing barrier**: absence of globally observable parameters for electronics blocks effective diagnosis/prognosis. Need sensing like vibration monitoring practice for electromechanical. **Thermography** monitors excessive heat (Fig 5.86); practical use depends on individual design — radar/avionics distribute components → may need **thermally sensitive fiberoptic sensors** instead. Thermography = simultaneous multi-component inspection but **hard to automate at board level** for highly integrated systems; design tradeoffs needed for cost/complexity of environmental sensors in distributed systems.
+
+**Radar example**: radar antenna (Fig 5.87) + main modules (Fig 5.88), electrical subsystem decomposed into subcomponents (lower tier). Today's E health monitoring = industry standards: **thermography, impedance measurement (contact and breakdown), visual inspection**. Many systems have BIT (inherent or external); **few or no systems use distributed sensors to continuously monitor failure sources (vibration, heat, power quality)** to detect incipient failure onset.
+
+**Coupled failure propagation**: each element failure **affects adjoining components** → additional failure modes + increased data/power loads on elements; **propagation path variable** → useful-life estimation more complex and probabilistic.
+
+**Technology churn**: electronics life cycle of chips ≈ **3 to 5 years**; rare failure modes may be tiny fraction of total → diagnosis/prognosis for them ineffective cost-wise. Frequent capability upgrades → FMECA hard to manage over constantly changing configuration; coexisting multiply-variant configurations add cost/complexity. Design analysis at system-design start should balance technology refresh/modernization vs prognosis.
+
+**Proposed framework tools** (model behavior + detect faults / predict useful life in electronics):
+- **Embedded life modes**: failure models from reliability studies / OEM data; express **probabilistic remaining-life estimate** of components.
+- **Environmental information**: distributed sensors for temperature, humidity, vibration; test-data models estimate life impact of exposure levels to environmental stressors → estimate remaining useful life.
+- **Operational data**: **number of power-on cycles and run time** matter for wiring & PCB failures; track operational data + **power quality** feeding system → measure life.
+- Fallback if no direct/surrogate life-impact measurements: traditional **BIT** confirms operation & identifies faults as they occur — but limited value for remaining-life prediction + large false-alarm counts.
+- Fig 5.89 = general life conception model for electronic components.
+
+### 5.11 CASE STUDY: VIBRATION-BASED FAULT DETECTION AND DIAGNOSIS FOR ENGINE BEARINGS (lines 4123-4255)
+
+**Scope + caveat**: integrated diagnostic capability for rolling-element bearings via **fusion of health-state awareness with vibration feature-based classifiers**; event-driven integration of vibration features from raw measurements; modular design (many failure modes & influencing factors). Focus = **rolling-element contact fatigue = spalling**; also modes that cause conditions leading to spalling (scratches / manufacturing defects → localized stress concentrations → premature spalling). NOTE: this part of the source (up to line 4255) contains **no wavelet analysis and no detection-percentage results** — the case study has only subsections 5.11.1-5.11.3 and closes at line 4254; do not attribute wavelet/percentage material to it.
+
+**Architecture (Fig 5.90) — three functional steps**: sensed data → current bearing health → future bearing health.
+- Sensed data module: monitor signals indicative of bearing health (**vibration, oil debris, temperature**); extract low-level diagnostic features: **RMS, kurtosis, high-frequency enveloped features**; also output **engine speed and maneuver-induced loading** as inputs to bearing health models; extract characteristic features that identify failed component (**ball, cage, inner or outer raceway**).
+- Current bearing health core = **bearing component fatigue model**: computes **cumulative damage sustained since installation**; life-limiting parameters **load and lubricant film thickness** derived from sensed data via **physics-based + empirical models**; **knowledge fusion**: combine fatigue probability with spall-indicative features → improves robustness and accuracy of prediction.
+- Future bearing health branch logic:
+  - **No spall currently** → **spall-initiation module** forecasts time to spall initiation using the same model as current assessment but with **projected future operating conditions (loads, speeds...)**; results passed to **progression model**, which also uses the **mission profile** → prediction of time from spall initiation to failure.
+  - **Spall exists** → initiation prognostic module **bypassed**; progression performed directly.
+- (Fig 5.89 = simplified life estimation model, belongs to 5.10.)
+
+#### 5.11.1 Vibration-Based Diagnostic Indicators (lines 4143-4155)
+- Test program rationale: advanced vibration features to detect early spalling are critical; two data sources: (a) faulted-bearing run-to-failure tests (vibration + oil-debris from ball-bearing rig with damaged bearing); (b) gas turbine engine in test cell (multiple excitation sources + background noise). CAUTION: to test algorithm sensitivity to weak signatures, the **engine test bearings contained no known faults**.
+- **Minisimulator** (ARL written "ARFL" here; Air Force Research Laboratory, Wright-Patterson AFB; data collection supported by **University of Dayton Research Institute (UDRI)** + AFRL): miniaturized lubrication system simulator = **test head + lubrication sump** (Fig 5.91); **pair of angular contact bearings** supports a rotating shaft; bearings **identical to the No. 2 main shaft bearing of an Allison T63 gas turbine engine**.
+- Seeded-fault run-to-failure test: fault seeded in **inner raceway** via small hardness indentation (**Brinell mark** [OCR "Brinnell"]); bearing loaded to **≈14,234 N (3200 lbf)**; constant speed **12,000 rpm (200 Hz)**; vibration via **cyanoacrylate-mounted ("Super Glue") accelerometer sampled at over 200 kHz**; oil debris from draining oil measured with **magnetic chip collector (Eaton Teledyne [OCR "Eateon Tedeco"])**; **oil data = spall initiation ground truth**.
+- Full engine tests: **T63 engine in test cell at AFRL**; two gas-generator speed levels: **"cruise" 50,000 rpm (833 Hz)** and **"idle" 32,000 rpm (533 Hz)**.
+
+#### 5.11.2 Fault Frequencies for T63 Bearing (lines 4157-4218)
+- Method: extract vibration amplitude at fault frequencies from FFT → isolates fault to a specific bearing; high amplitude at a fault frequency = fault in associated component.
+- Frequency labels: **BSF** ball spin frequency; **BPFI** inner raceway (ball pass) frequency; **BPFO** outer raceway frequency; **Cage** cage frequency.
+- **TABLE 5.11 Bearing dimensions (mm)**:
+  - Bearing 1: ball diameter Bd = **4.7625**, n balls z = **8**, pitch diameter Pd = **42.0624**, contact angle β = **18.5°**
+  - Bearing 2: ball diameter Bd = **7.9375**, n balls z = **13**, pitch diameter Pd = **42.0624**, contact angle β = **18.5°**
+- **TABLE 5.12 Minisimulator bearing fault frequencies (Hz)** — shaft speed **200**: BSF **512**, BPFI **1530**, BPFO **1065**, Cage **82**.
+- **TABLE 5.13 T63 No. 1 bearing fault frequencies (Hz)**:
+  - at shaft speed 533: BSF **2327**, BPFI **2361**, BPFO **1931**, Cage **238**
+  - at shaft speed 833: BSF **3636**, BPFI **3690**, BPFO **2974**, Cage **372**
+- **TABLE 5.14 T63 No. 2 bearing fault frequencies (Hz)**:
+  - at 533: BSF **1367**, BPFI **4085**, BPFO **2845**, Cage **219**
+  - at 833: BSF **2136**, BPFI **6384**, BPFO **4456**, Cage **342**
+- **Gear mesh frequencies (GMF)**: meshing gear teeth produce periodic forces at GMF; Table 5.15 GMFs calculated for T63 gears at **idle speed 32,000 rpm**; **speed ratio = gear speed / gas producer (GP) input gear speed** → rescale GMFs to other GP speeds.
+- **TABLE 5.15 T63 gear mesh frequencies (Hz)** (speed ratio to GP shaft speed [table header; text says GP input gear speed], GMF column header "GMF at 533 Hz"):
+  - A: ratio 1.000, GMF 9061
+  - B: 0.202, 3775
+  - C: 0.202, 9061
+  - D: 0.08, 3775
+  - E: 0.151, 3777
+  - F: 0.236, 3775
+  - G: 0.252, 1125
+  - H: 0.073, 1124
+  - I: 0.117, 3128
+  - J: 0.117, 2315
+  - K: 0.099, 2315
+  - L: 0.082, 2315
+  - M: 0.196, 8758
+
+#### 5.11.3 Feature Extraction Using High-Frequency Enveloping (lines 4220-4254)
+- Problem: characteristic frequencies easy to calculate, hard to detect with conventional frequency-domain analysis — incipient (sometimes developed) fault amplitudes indistinguishable from background noise or obscured by much-higher-amplitude sources: **engine rotors, blade passing, gear mesh**. BUT bearing faults produce **impulsive forces that excite vibration at frequencies well above the engine background noise** → basis of enveloping.
+- **Impact Energy** = **multiband enveloping-based** feature extraction (Fig 5.92 "high-frequency demodulation process"). Pipeline, 4 steps:
+  1. **Band-pass filter** the raw vibration signal
+  2. **Full-wave rectify** the band-passed signal to extract the envelope
+  3. **Low-pass filter** the rectified signal to remove the high-frequency carrier
+  4. **Remove any dc content**
+- Minisimulator result (key numbers): several band-pass + low-pass filters used to cover spectrum regions / investigate many possible test-rig resonances.
+  - Fig 5.93 Impact Energy spectrum from **early** in the test: data collected **prior to spall initiation** (per oil-debris data) — response due to the small **seeded indentation on the race** alone.
+  - Comparison Fig 5.94: **conventional FFT with 10 frequency-domain averages shows NO peak at the inner-race ball-pass frequency (1530 Hz)**.
+  - Impact Energy plot shows **clearly defined peaks at 1530 Hz and its second through fourth harmonics**. Peaks defined with a detection window of **[OCR garbled: "H115065 Hz" — presumably ±(some) Hz about the theoretical frequency]** to account for **bearing slippage**. **Fault indication present from the onset of the test.**
+- Engine test interpretation cautions: high ambient noise obscures features; bearings & gears healthy, yet **minor imperfections within manufacturing tolerances** (raceway & ball waviness, surface finish, dimensional tolerances) create **"damage-like" signatures in a healthy engine**; techniques that distinguish these are most likely to detect defective bearings (most sensitive).
+  - Fig 5.95 (T63 Impact Energy FFT, calculated frequencies vs measured magnitudes): most prominent features = **harmonics of gas-generator shaft speed (N × rpm)**; less prominent = a **GMF** and **BPFO of bearing No. 2 (BPFO2)** observable.
+  - CAUTION: low-amplitude GMF vibration does not necessarily indicate a problem; low-amplitude characteristic bearing frequency may reflect a **benign** condition; observation nonetheless demonstrates Impact Energy's ability to detect incipient faults. Some peaks remain **unidentified** (many gears/bearings + compressor & turbine blade frequencies).
+- Complementary conventional statistical features: **RMS, kurtosis, crest value [crest factor], peak value** — valuable to prognosis but not shown here; combine with the more sensitive Impact Energy features **to avoid false alarms**.
+- Chapter-level takeaway: sensor/feature-based diagnostics **complement model-based prognosis by updating the model** when fault conditions may have occurred; measurement-based approaches correlate directly with component condition → update modeling assumptions → **reduce uncertainty in RUL predictions**.
+- Forward look: real-time predict/detect algorithms developed in parallel with flight-capable sensors — **inline oil-debris/condition monitors, vibration-analysis MEMS**; intelligent **data-fusion architectures** optimally combine sensor data with probabilistic component models for best decisions on **oil-wetted components**; use **model-based estimates when no diagnostic indicators present**, monitored features (oil debris, vibration) at later stages when failure indications detectable.
+
+(5.12 REFERENCES start line 4256 — skipped per scope.)
+
