@@ -1,6 +1,6 @@
-# Nguyen et al. Ch6-8 — Prognosis, Performance Metrics, Product Support
+# Nguyen et al. Ch6-8 — Prognosis, Performance Metrics, Product Support (complete)
 
-**Intelligent Fault Diagnosis and Prognosis for Engineering Systems** (Wiley 2006). Full distillation of the prognosis chapter (particle filters, Weibull, Yu-Harris/Kotzalas-Harris bearing life with rig numbers), the metrics chapter (alpha-lambda criterion, RUL band definitions, NASA C-MAPSS family), and product-support/scheduling (H60 gearbox and helicopter-LRU worked examples). [reconstructed]/[OCR?] tags; nothing invented.
+**Intelligent Fault Diagnosis and Prognosis for Engineering Systems** (Wiley 2006). Full distillation: prognosis (particle filters, Weibull, Yu-Harris/Kotzalas-Harris bearing life with rig numbers), the complete metrics chapter 7.1-7.7 (requirement targets, ROC/POD-POFA, alpha-lambda, RUL confidence examples, total-value cost model, CINCLANTFLT NPV/IRR case), and product-support/scheduling (H60 gearbox and helicopter-LRU worked examples). [reconstructed]/[OCR?]/[derived] tags; nothing invented.
 
 ## Nguyen Ch6 — Prognosis (source lines 4353-5340)
 
@@ -392,6 +392,104 @@
 - **Link, diagnosis metrics → Ch5:** detection/isolation/identification %, false-alarm rate and BIT requirement score the Ch5 reasoners — fuzzy-logic + Dempster-Shafer fusion and wavelet-NN/filter-bank classifiers (5.4.x), Kalman/RLS parameter-deviation + particle-filter FDD (5.5.x), statistical change detection (5.9.1).
 - **Link, prognosis metrics → Ch6:** 90%/98% confidence levels, >1-day/>7-day horizons, CPH and false-prediction rate score Ch6's TTF/RUL machinery — Weibull TTF (6.3.2), RUL-PDF (6.3.3), particle-filter failure prognosis (6.2.3), CPNN confidence prediction (6.4.3).
 - **Link, feature metrics → Ch5/Ch6 intake:** IG/entropy, d(X), ρ and the Z-test grade the feature vectors those Ch5 pattern-library/classifier methods (5.3–5.4) and Ch6 data-driven predictors (6.4) consume — 7.3's premise that features are the foundation of effective Dx&Px.
+
+## Nguyen Ch7 pt.2 — §7.4-7.5 Diagnosis & Prognosis Performance Metrics (source lines 5480-6008)
+
+### 7.4 FAULT DIAGNOSIS PERFORMANCE METRICS
+
+#### 7.4.1 Performance Metrics for Diagnostic Systems
+- Headline metrics: false positives; false negatives; time delay (span between fault initiation and detection); percent isolation to one line-replaceable unit (LRU).
+- Requirements phrased as % of total faults over subsystem life, e.g. "no more than 5% false positives and no more than 3% false negatives." Tradeoff favors STRICTER false-negative limit: missed faults risk catastrophic failure/loss of life; false positives only erode operator confidence.
+- Time delay matters as early warning AND as the time window a prognosis algorithm needs to do its job.
+- Decision matrix (Table 7.2, hypothesis-testing, after Liu & Motoda 1998), rows = Positive D1 (detected) / Negative D0 (not detected), cols = Fault F1 / No Fault F0:
+  - a = detected faults; b = false alarms; c = missed faults; d = correct rejections.
+  - row/col totals: a+c = all faults; b+d = all fault-free cases; a+b = all alarms; c+d = all non-alarms; a+b+c+d = all cases.
+- Probability of detection POD = a/(a+c), given a fault (a.k.a. sensitivity) [reconstructed; formula OCR-not-decoded, terms per Table 7.2].
+- Probability of false alarm POFA = b/(b+d) — fraction of fault-free cases that alarm [reconstructed; OCR gap].
+- Accuracy metric uses ALL data (fault + no-fault): acc = (a+d)/(a+b+c+d) [reconstructed; OCR gap].
+- Fault isolation = distinguishing failing-unit candidates after detection; metric = percent isolation to one LRU; coupled with fault identification (severity of fault impact) it tells the operator criticality + corrective action.
+
+#### 7.4.2 The Receiver Operating Characteristic
+- ROC answers "how well is a fault diagnosed?" as the detection threshold varies. Limitation: 2-D curve; higher-dimensional attributes can't be shown.
+- Worked example (temperature diagnosis), 4 steps: (1) aggregate healthy vs faulty population histograms vs temperature; overlap band (book: 10-40 range) cannot conclusively separate. (2) For each threshold compute fraction correctly diagnosed — at threshold 20: 90% of truly failed parts diagnosed right (true positives), 50% of healthy wrongly alarmed (false positives). (3) Plot ROC: true-positive rate vs false-positive rate per threshold; straight line = 50/50 coin-flip; curves bowing left = better; accuracy A indexed by area under curve (AUC), grows as curve bends. (4) Pick threshold on curve: bottom-left strictest (few false positives, many missed), top-right most lenient (max discovery, many false alarms).
+- Optimal threshold depends on: criticality of failure condition, prevalence in population, availability of corrective measures, financial/other costs of false alarms.
+
+#### 7.4.3 Fault Severity, Detection Threshold/Confidence, and Complexity Metrics
+- CBM/PHM performance is a function of fault severity; incipient faults/mild degradation are hardest. Ground-truth severity scale: 0 = healthy, 1 = unacceptable degradation.
+- Success function S(s) = function of (average confidence − average severity) over time; works for Boolean or continuous confidence (Figs 7.7-7.8).
+- Detection threshold metric: Detection threshold = 1 − S(s), success function normalized (stated in text). Confidence levels 67% and 95% (1σ, 2σ) used in its calculation.
+- Overall detection confidence: computed from S(s) and C(s) (detection confidence at severity s) over full severity range [formula OCR-not-decoded]; high-confidence incipient detection scores high, detect-only-when-severe scores low.
+- Stability metric: penalizes wildly fluctuating confidence; integrates peak-to-peak difference over the fault transition: ~ ∫ [C_H(s) − C_L(s)] ds with C_H/C_L = high/low confidence at each transition point [reconstructed; OCR gap].
+- Detection duty sensitivity metric: difference between outputs under two load/duty conditions C1(s) vs C2(s), formulated over severity [formula OCR-not-decoded]; system must detect anomalies over full duty range (loads, speeds).
+- False-positive confidence metric: frequency + upper confidence limit of false anomaly reports; based on false-positive function of Orsagh et al. (2000).
+- Noise sensitivity metric: |C1(s) − C2(s)| where C1, C2 = success functions under two noise conditions [reconstructed from definitions; formula OCR gap].
+- Implementation cost metric: cost to acquire + implement on a single application; shared costs divided across equipment. O&M cost metric: annual running cost (manual data collection, inspections, lab testing, archival, relicensing, repairs).
+- Computer resource metric: normalized sum of CPU time (floating-point ops), static+dynamic RAM and source-code space, static+dynamic disk storage.
+- System complexity metric: source lines of code (SLOC) + number of inputs required.
+
+#### 7.4.4 Diagnostic System Classifier Performance Metrics
+- Confusion matrix: square table, rows = classified-as, cols = actual defect; shaded diagonal = correct classifications (should dominate); entries in % or actual counts.
+- Table 7.3 example (27 cases, 4 faults) as bullets: Collector Gear Crack row: 5/1/1/0 (tot 7); Quill Shaft Crack Prop.: 0/6/0/1 (7); Spiral Bevel Input Pinion Spalling: 1/0/5/0 (6); Input Pinion Bearing Corrosion: 0/0/1/6 (7); col totals 6/7/7/7=27.
+- Probability of isolation / fault isolation rate (FIR) = % of all component failures isolated unambiguously: FIR = ΣA_i / Σ(A_i + C_i), A_i = diagonal (isolated), C_i = off-diagonal (not unambiguously isolated) [reconstructed; OCR gap]. For Table 7.3: Σdiag = 5+6+5+6 = 22 of 27 → FIR ≈ 81% [derived from table, not stated in book].
+- Misclassification cost metric (general, handles unequal class costs and multiclass): MC = Σi Σj C(i,j)·CM(i,j) (normalized by case count per surrounding equations, not decoded) [reconstructed; OCR gap; C = cost matrix, CM = confusion matrix]. Downside: requires evaluating a cost matrix.
+- Example 7.1 (IMATE aircraft-engine advisor, Ashby & Scheuren 2000): 6 hot-gas-path faults — FAN damage, COM compressor, HPT, LPT, CDP discharge pressure, VBV variable bleed valve leak; classifiers compared: multilayer NN (NN20/25/30 variants), fuzzy NN (FNN), CART.
+- Fault criticality rank vector R (Table 7.4): NF 0, FAN 0.9, COM 0.8, HPT 0.8, LPT 0.8, CDP 0.1, VBV 0.1. Cost matrix (Table 7.5) built with m = 0.9, S = 100; off-diagonal costs run ~2.6-25.7 (e.g. NF→Fan 23.1, Fan→NF 25.7, CDP→Comp 18.0).
+- Table 7.6 confusion matrices (per classifier, 7 classes incl. NF; diagonal = correct): CART diag 2074/2781/2577/2419/1864/2539/2547 (Σ=16801, big LPT↔NF/LPT↔HPT leaks); FNN diag Σ=14476 (LPT row worst: only 914 correct, 908 misread as HPT); NN20 Σ=17925; NN25 Σ=17979; NN30 Σ=17979 [diagonal sums derived by me from table; book ranks them in Tables 7.7-7.8].
+- Tables 7.7/7.8: different R rankings → different cost matrices → different misclassification-cost and accuracy measures per classifier (results tables follow at 5735+).
+
+#### 7.4.5 Statistical Detection Concepts
+- Detection rests on feature separability between no-fault and faulted PDFs; POD ≥ 0.9 desirable but not always attainable. POFA and POD are COUPLED: both measured on the high side of the threshold — raising the threshold to cut POFA necessarily cuts POD (Fig. 7.12).
+- Limited-data regime: assume Rician (noncentral chi) distribution for magnitude data — real/imaginary parts with means αQ, αI corrupted by independent Gaussian noise variance σ² → Rician PDF (Papoulis 1984) via modified 0th-order Bessel I0 [PDF formula OCR-not-decoded].
+- Small samples (Westland seeded-fault set, Cameron 1993: 5 fault/no-fault sets per sensor): variance estimated with chi-squared (noncentral) approximation with user-defined confidence bounds; interval between (n−1)s²/χ² Upper and Lower bounds around true σ² [reconstructed; OCR gap]. Noncentral chi-squared PDF uses I_r(u), rth modified Bessel function; Impact Technologies implemented these PDFs in C++ (Bessel code adapted from Numerical Recipes in C; 0th-order Bessel used in chi-squared PDF, error < finite-arithmetic error).
+- Worked results, Table 7.7 (R = [0, .9, .8, .8, .8, .1, .1]): misclassification cost / accuracy — CART 13.03 (#4)/85.57%; FNN 22.54 (#5)/73.73%; NN20 7.02 (#3)/91.29%; NN25 6.61 (#1)/91.57%; NN30 6.72 (#2)/91.57%.
+- Table 7.8 (R = [0, .95, .01, .1, .01, .01, .2]): CART 6.29 (#2)/85.57%; FNN 14.25 (#5)/73.73%; NN20 6.68 (#3)/91.29%; NN25 6.75 (#4)/91.57%; NN30 5.83 (#1)/91.57%. Lesson: rankings shift with criticality vector R even though accuracy is classifier-invariant.
+
+#### 7.4.6 An Architecture for Diagnostic Metrics Assessment
+- MET (metrics evaluation tool): Impact Technologies + Sikorsky + Penn State ARL, under Boeing RITA HUMS project; demo = seeded-fault H-46 aft transmission data (Westland set) with gear/shaft/bearing algorithms; Oracle 8i + MATLAB, TCL glue over TCP/IP, client-server (data too big for client-side storage; algorithms stored as BLOBs like raw data; external-file pointers faster at scale).
+- Westland 22-s data at 100k samples/s parsed into 4-s segments; ~98,000 field updates to raw-data table alone → automation mandatory. Directory scheme: ../CH46-Chinook/Aft Transmission/6 1 1992/Test ID/Raw.
+- MET client tabs: metrics calculation (select algorithms/aircraft/systems/components/faults/features/loads/sensors); detection window (feature discriminability plot, thresholds from false-alarm criteria + user confidence bounds, then POD/POFA/accuracy computed at that threshold); sensitivity window (ROC = POD vs POFA vs threshold family; dark lines = theoretical Rician at various SNRs, light = analyzed data); summary window (save/print).
+
+### 7.5 PROGNOSIS PERFORMANCE METRICS
+- No agreed standard set of prognostic metrics; this class stems from prognosis objectives + the statistical (uncertain) nature of the algorithms. An algorithm must output predicted failure time (expected value) AND a confidence interval; measures weigh both interval width and closeness to truth, over many experiments; measures improve as data accumulate.
+- Two dominant measures: ACCURACY (closeness of predicted to actual value) and PRECISION (how clustered the predictions are; involves confidence level + distribution of predictions across experiments).
+
+#### 7.5.1 Accuracy
+- Per experiment i: actual failure time t_af(i), predicted t_pf(i). Distance D_i = |t_pf(i) − t_af(i)|; D0 = application-scaled normalizing constant; N experiments.
+- Accuracy at predicting time t_p: mean over i of an exponential exp(−α·D_i/D0) [reconstructed; OCR garbled fragment "e^(−αD_i/D_0)"; exponential chosen for smooth monotone decrease: =1 at D_i=0, →0 as D_i→∞; steepest slope near D_i≈0 → high measurement sensitivity around the truth, low sensitivity for gross deviations].
+- Fig. 7.20: three evolution curves split at predict time; accuracy = 1 exactly when predicted = actual failure time.
+
+#### 7.5.2 Precision
+- Narrowness of the interval containing remaining life; high when predictions cluster, low when scattered over output range; average confidence-interval width counts too (narrower CI = higher precision).
+- Prediction error E_i = t_pf(i) − t_af(i); mean and variance of E_i computed over N experiments [standard sample mean/variance; formulas OCR-not-decoded].
+- Precision at t_p: exponential in normalized prediction variance (normalizer σ0²) and per-experiment confidence-interval width R_i (normalizer R0) [reconstructed; OCR gap]. Precision ∈ [0,1]: 1 = highest. Narrower confidence bounds + tighter clustering → higher value (Figs. 7.21-7.22).
+
+#### 7.5.3 Timeliness of the Predicted Time to Failure
+- Accuracy/precision ignore the TTF PDF's position on the time axis vs the actual failure event. Fig. 7.23, three cases: (a) failure occurs AFTER the predicted TTF PDF; (b) failure occurs DURING the prediction horizon = the desirable outcome for declaring the algorithm accurate; (c) failure occurs much EARLIER than predicted = undesirable, potentially catastrophic without immediate post-detection action (Hannah, 2004).
+- Conclusion: accuracy and precision must be augmented with severity requirements on prediction timing — achieve case (b), at minimum avoid case (c).
+
+#### 7.5.4 Prediction Confidence Metrics
+- Two viewpoints: maintainer ("when to maintain, given spares etc.") needs RUL estimate + uncertainty bounds on the trending curve = earliest/latest maintenance windows + risk factor for delay; field commander ("are assets available for mission duration?") needs confidence of mission completion, or given confidence level → expected TTF.
+- Prognostic curve must be modulated by a time-dependent distribution: statistical/Weibull or possibilistic/fuzzy. At t0: mean time to failure T_fm, earliest T_fe, latest T_fl; hazard line = fault magnitude where component ceases to be operational (Barlas et al. 2003).
+- Confidence for mission length T′: ∫ from T′ to ∞ of the distribution = probability/possibility the asset survives the mission. Reverse problem: pick confidence (e.g. 95%), solve ∫ from T″ to ∞ = 0.95 for T″ = available time at that confidence. Dynamic evolution: new confidence limits as data arrive; uncertainty bounds shrink via learning routines. Future metrics: reliability of confidence limits, risk assessment, safety specs.
+- Example 7.2 (bearing RUL, worked numbers): 2300 bearings; crack size at failure ~ discrete triangular (Table 7.9): 300 fail @0.7", 500 @0.85", 700 @1.0", 500 @1.15", 300 @1.3"; failure time ~ continuous normal; crack grows linearly from 0 at three rates. At T′ = 90 min, 2200/2300 had failed → confidence of NOT failing = 100/2300 ≈ 0.043 (4.3%). For 90% confidence: 0.9×2300 ≈ 2100 survive → T″ ≈ 40 minutes.
+
+#### 7.5.5 Other Prognosis Metrics
+- Similarity: compares multiple predicted time series against the real series from a start point to a future point; built from per-element differences of series x_i, y_i normalized by range (max_i − min_i over all ith elements) [reconstructed skeleton; formula OCR-not-decoded; Fig. 7.32].
+- Sensitivity: response to input changes/external disturbances = ΔOut/ΔIn, distance measures of two successive outputs vs two successive inputs [ratio reconstructed; OCR gap].
+- Prediction-to-failure times: mean TTF = (1/N)·Σ t_pf(i) over N experiments; standard deviation of prediction-to-failure time = sqrt of mean squared deviation from that mean [reconstructed; OCR gap].
+
+### 7.6 DIAGNOSIS AND PROGNOSIS EFFECTIVENESS METRICS (source 6009-6051)
+- Technology value = benefits across all failure modes it covers, minus implementation, O&M, and consequential costs of wrong assessments (Fig 7.33 grouping).
+- Total value equation (formula block undecoded; structure from variable definitions [reconstructed]): TechnicalValue = Σ_modes [ P_f·(D·α + I·β) − P_D·φ − P_I·θ ]; TotalValue = TechnicalValue − ( A + O + P_c·δ ).
+  - P_f = time-based probability of failure-mode occurrence; D = overall detection confidence score; α = savings from detecting before failure; I = overall isolation confidence score; β = savings from automated isolation; P_D = false-positive detection score; φ = cost of a false-positive detection; P_I = false-positive isolation score; θ = cost of a false-positive isolation; A = acquisition/implementation cost; O = life-cycle O&M cost; P_c = computer-resource requirement score; δ = cost of a standard computer system.
+- Scoring convention: LOW score = undesirable, HIGH = desirable; hence a HIGH computer-resource score means the algorithm uses only a small share of resources.
+
+### 7.7 COMPLEXITY / COST-BENEFIT ANALYSIS OF CBM/PHM SYSTEMS (source 6053-6104)
+- Honest caveat in-book: no historical data yet exist for thorough economic analysis (technologies too new, few full-scale implementations) — studies use "avoided cost" reasoning instead.
+- Overall performance = combination of (1) a complexity measure (formula undecoded; involves t_p = moment RUL is predicted and t_d = moment fault is detected), (2) cost-benefit analysis (maintenance frequency, downtime, dollar cost, etc.), (3) weighted overall performance (w_i weights, formula undecoded).
+- Cost-benefit recipe, 6 steps: baseline condition from maintenance logs (BM/TBM costs + qualitative operational impact via interviews) → BM-cost reduction counted as CBM benefit → avoided time-based events (threshold failure probabilities + approximate TTF) counted as benefit → intangible benefits indexed (severe/moderate) via interviews → projected CBM cost estimate (instrumentation, computing, training, installation, upkeep) → aggregate life-cycle costs vs benefits.
+- **Example 7.3 CINCLANTFLT "value of prognosis" study (numbers as printed):** U.S. Atlantic Fleet I&D maintenance cost $2.6B/yr (FY96$); fully integrated CBM assumed to yield 30% reduction; full realization in 2017 (S&T sunk cost included); full implementation costs 1% of asset acquisition cost; IT-21 (or equivalent) assumed already in place. Financial factors: inflation 4%, investment hurdle rate 10%, technology maintenance 10% of installed cost. **Results: NPV $337M over 15 yr, $1,306M over 20 yr; IRR 22% (15 yr) / 30% (20 yr).**
+- NOTE for downstream: no public-dataset tables and no "60-second rule" exist anywhere in this chapter (an earlier distillation report falsely claimed Table 7.9 C-MAPSS datasets — that is NASA post-2008 literature, not this book). Datasets appear in later NASA papers, not here.
 
 ## Nguyen Ch8 — Product Support, Knowledge Base, CBM Scheduling (source lines 6137-6454)
 
